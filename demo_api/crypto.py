@@ -1,5 +1,6 @@
 import os
 import base64
+import pathlib
 from typing import Optional
 from enum import Enum
 
@@ -9,6 +10,9 @@ import structlog
 
 
 log = structlog.get_logger()
+
+KEY_DIR = pathlib.Path(__file__).parent / "keys"
+KEY_DIR.mkdir(parents=True, exist_ok=True)
 
 class CipherSuite(str, Enum):
     AES_128_CBC = "AES-128-CBC"
@@ -27,7 +31,7 @@ class CipherSuite(str, Enum):
 def get_key(algorithm: CipherSuite) -> bytes:
     """Returns a key for the given algorithm.
     If the key file does not exist, it creates a new key and saves it to the key file."""
-    keyfile = f"keys/{algorithm}.key"
+    keyfile = KEY_DIR / f"{algorithm}.key"
     key = None
     if not os.path.exists(keyfile):
         match algorithm:
@@ -60,7 +64,7 @@ def get_key(algorithm: CipherSuite) -> bytes:
 def get_iv(algorithm: CipherSuite, random: bool = True) -> bytes:
     """Returns a random IV for the given algorithm.
     If the IV file does not exist, it creates a new IV and saves it to the IV file."""
-    ivfile = f"keys/{algorithm}.iv"
+    ivfile = KEY_DIR / f"{algorithm}.iv"
     iv = None
 
     if random or not os.path.exists(ivfile):

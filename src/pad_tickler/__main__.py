@@ -1,7 +1,6 @@
 import logging
 from time import sleep
 
-from rich.console import Console
 from rich.layout import Layout
 from rich.live import Live
 from rich.panel import Panel
@@ -10,11 +9,10 @@ from rich.progress import Progress, TextColumn, BarColumn, SpinnerColumn
 from src.pad_tickler.ui import ui
 
 
-ORIGINAL_HEIGHT = Console().size.height
-console = Console(height=ORIGINAL_HEIGHT - 4)
-
 logger = logging.getLogger("main")
 logger.setLevel(logging.INFO)
+
+console = ui.get_console()
 
 
 # Data for the run

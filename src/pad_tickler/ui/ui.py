@@ -2,6 +2,7 @@ import logging
 from collections import deque
 
 from rich.align import Align
+from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
@@ -25,6 +26,11 @@ logger.setLevel(logging.INFO)
 uih = UILogHandler()
 uih.setFormatter(logging.Formatter("%(asctime)s  %(levelname)s  %(message)s", "%H:%M:%S"))
 logger.addHandler(uih)
+
+
+def get_console():
+    ORIGINAL_HEIGHT = Console().size.height
+    console = Console(height=ORIGINAL_HEIGHT - 4)
 
 
 def render_log_panel(title: str, max_lines: int) -> Panel:

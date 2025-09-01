@@ -2,6 +2,7 @@ import logging
 from collections import deque
 
 from rich.align import Align
+from rich.progress import Progress, TextColumn, BarColumn, SpinnerColumn
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -70,3 +71,15 @@ def phase_table(title, rows):
     for r in rows: t.add_row(*r)
     t = Align(t, align="center")
     return Panel(t, title=title, padding=(1,1))
+
+
+def get_progress(console: Console) -> Progress:
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(bar_width=30),
+        TextColumn("{task.completed}/{task.total}"),
+        expand=True,
+        console=console,
+    )
+    return progress

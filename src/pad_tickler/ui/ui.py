@@ -29,6 +29,12 @@ uih.setFormatter(logging.Formatter("%(asctime)s  %(levelname)s  %(message)s", "%
 logger.addHandler(uih)
 
 
+def get_ui_log_handler():
+    uih = UILogHandler()
+    uih.setFormatter(logging.Formatter("%(asctime)s  %(levelname)s  %(message)s", "%H:%M:%S"))
+    return uih
+
+
 def get_console():
     ORIGINAL_HEIGHT = Console().size.height
     console = Console(height=ORIGINAL_HEIGHT - 4)

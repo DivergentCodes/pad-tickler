@@ -11,6 +11,7 @@ from src.pad_tickler.ui import ui
 
 logger = logging.getLogger("main")
 logger.setLevel(logging.INFO)
+logger.addHandler(ui.get_ui_log_handler())
 
 console = ui.get_console()
 

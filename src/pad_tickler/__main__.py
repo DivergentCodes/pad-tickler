@@ -33,7 +33,7 @@ logger.setLevel(logging.INFO)
 logger.addHandler(ui.get_ui_log_handler())
 
 
-def load_bytes() -> Tuple[bytearray, bytearray]:
+def load_ciphertext() -> Tuple[bytearray, bytearray]:
     ciphertext = bytearray(base64.b64decode(POC_ARGS["payload"]["ciphertext_b64"]))
     iv = bytearray(base64.b64decode(POC_ARGS["payload"]["iv_b64"]))
     return ciphertext, iv
@@ -49,7 +49,7 @@ def main():
         # Live loop
         with Live(layout, console=console, screen=True, transient=False, auto_refresh=False, refresh_per_second=8) as live:
 
-            ciphertext, iv = load_bytes()
+            ciphertext, iv = load_ciphertext()
             ciphertext_blocks = [iv] + [ciphertext[i:i+16] for i in range(0, len(ciphertext), 16)]
             logger.info(f"Loaded ciphertext blocks: len(ciphertext_blocks)={len(ciphertext_blocks)}")
 

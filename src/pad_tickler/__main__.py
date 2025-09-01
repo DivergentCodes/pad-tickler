@@ -1,3 +1,5 @@
+import base64
+from typing import Tuple
 import logging
 from time import sleep
 
@@ -6,9 +8,35 @@ from rich.live import Live
 from src.pad_tickler.ui import ui
 
 
+POC_ARGS = {
+  "payload": {
+    "plaintext": "Hello, world!",
+    "alg": "AES-128-CBC",
+    "iv_b64": "L4GNQGz48epdIiVCc2MboQ==",
+    "ciphertext_b64": "mrH+LB63tYaVm7ZG3uFoaw=="
+  },
+  "target": {
+      "origin": "http://localhost:8000",
+      "method": "POST",
+      "path": "/api/validate",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "variable_name": "ciphertext_b64",
+      "variable_location": "body",
+  }
+}
+
+
 logger = logging.getLogger("main")
 logger.setLevel(logging.INFO)
 logger.addHandler(ui.get_ui_log_handler())
+
+
+def load_bytes() -> Tuple[bytearray, bytearray]:
+    ciphertext = bytearray(base64.b64decode(POC_ARGS["payload"]["ciphertext_b64"]))
+    iv = bytearray(base64.b64decode(POC_ARGS["payload"]["iv_b64"]))
+    return ciphertext, iv
 
 
 def main():
@@ -24,18 +52,14 @@ def main():
     try:
         # Live loop
         with Live(layout, console=console, screen=True, transient=False, auto_refresh=False, refresh_per_second=8) as live:
+
+            ciphertext, iv = load_bytes()
+            logger.info(f"Loaded bytes: len(ciphertext)={len(ciphertext)}, len(iv)={len(iv)}")
+
             for i in range(2000):
                 if not progress.tasks[t1].finished:
                     progress.advance(t1, 1)
                 progress.advance(t2, 1)
-
-                # Write logs normally.
-                if i % 20 == 0:
-                    logger.info("Processing batch %d …", i // 20)
-                if i % 77 == 0:
-                    logger.warning("Slow response from worker %d", i % 9)
-                if i == 555:
-                    logger.error("Transient error on item %d", i)
 
                 # Re-render the bottom pane with the newest N lines.
                 LOG_LINES_VISIBLE = layout["lower"].size - 2

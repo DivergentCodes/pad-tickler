@@ -49,12 +49,13 @@ def main():
         # Live loop
         with Live(layout, console=console, screen=True, transient=False, auto_refresh=False, refresh_per_second=8) as live:
 
+            ciphertext, iv = load_bytes()
+            ciphertext_blocks = [iv] + [ciphertext[i:i+16] for i in range(0, len(ciphertext), 16)]
+            logger.info(f"Loaded ciphertext blocks: len(ciphertext_blocks)={len(ciphertext_blocks)}")
+
             # Tasks
             t1 = progress.add_task("Current batch", total=50)
             t2 = progress.add_task("Full dataset", total=2000)
-
-            ciphertext, iv = load_bytes()
-            logger.info(f"Loaded bytes: len(ciphertext)={len(ciphertext)}, len(iv)={len(iv)}")
 
             for i in range(2000):
                 if not progress.tasks[t1].finished:

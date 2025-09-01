@@ -40,18 +40,17 @@ def load_bytes() -> Tuple[bytearray, bytearray]:
 
 
 def main():
-
-    # Highest level UI components
-    console = ui.get_console()
-    layout, progress = ui.get_layout(console)
-
-    # Tasks
-    t1 = progress.add_task("Current batch", total=50)
-    t2 = progress.add_task("Full dataset", total=2000)
-
     try:
+        # Highest level UI components
+        console = ui.get_console()
+        layout, progress = ui.get_layout(console)
+
         # Live loop
         with Live(layout, console=console, screen=True, transient=False, auto_refresh=False, refresh_per_second=8) as live:
+
+            # Tasks
+            t1 = progress.add_task("Current batch", total=50)
+            t2 = progress.add_task("Full dataset", total=2000)
 
             ciphertext, iv = load_bytes()
             logger.info(f"Loaded bytes: len(ciphertext)={len(ciphertext)}, len(iv)={len(iv)}")

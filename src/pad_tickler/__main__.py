@@ -44,6 +44,7 @@ def main():
         # Highest level UI components
         console = ui.get_console()
         layout, progress = ui.get_layout(console)
+        log_lines_visible = layout["lower"].size - 2
 
         # Live loop
         with Live(layout, console=console, screen=True, transient=False, auto_refresh=False, refresh_per_second=8) as live:
@@ -61,8 +62,7 @@ def main():
                 progress.advance(t2, 1)
 
                 # Re-render the bottom pane with the newest N lines.
-                LOG_LINES_VISIBLE = layout["lower"].size - 2
-                layout["lower"].update(ui.render_log_panel("Logs", LOG_LINES_VISIBLE))
+                ui.update_log_panel(layout, log_lines_visible)
 
                 live.refresh()
                 sleep(0.03)

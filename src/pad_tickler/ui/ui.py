@@ -128,3 +128,8 @@ def get_layout(console: Console) -> Tuple[Layout, Progress]:
     LOG_LINES_VISIBLE = 10
     layout["lower"].update(render_log_panel("Logs", LOG_LINES_VISIBLE))
     return layout, progress
+
+
+def update_log_panel(layout: Layout, log_lines_visible: int):
+    """Update the log panel with the newest N lines."""
+    layout["lower"].update(render_log_panel("Logs", log_lines_visible))

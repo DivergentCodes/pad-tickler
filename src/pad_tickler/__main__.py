@@ -10,16 +10,17 @@ logger = logging.getLogger("main")
 logger.setLevel(logging.INFO)
 logger.addHandler(ui.get_ui_log_handler())
 
-# Highest level UI components
-console = ui.get_console()
-layout, progress = ui.get_layout(console)
-
-# Tasks
-t1 = progress.add_task("Current batch", total=50)
-t2 = progress.add_task("Full dataset", total=2000)
-
 
 def main():
+
+    # Highest level UI components
+    console = ui.get_console()
+    layout, progress = ui.get_layout(console)
+
+    # Tasks
+    t1 = progress.add_task("Current batch", total=50)
+    t2 = progress.add_task("Full dataset", total=2000)
+
     try:
         # Live loop
         with Live(layout, console=console, screen=True, transient=False, auto_refresh=False, refresh_per_second=8) as live:

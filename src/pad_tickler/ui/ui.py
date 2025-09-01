@@ -38,6 +38,7 @@ def get_ui_log_handler():
 def get_console():
     ORIGINAL_HEIGHT = Console().size.height
     console = Console(height=ORIGINAL_HEIGHT - 4)
+    return console
 
 
 def render_log_panel(title: str, max_lines: int) -> Panel:

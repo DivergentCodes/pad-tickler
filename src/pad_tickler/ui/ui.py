@@ -1,5 +1,6 @@
 import logging
 from collections import deque
+from typing import Tuple
 
 from rich.align import Align
 from rich.progress import Progress, TextColumn, BarColumn, SpinnerColumn
@@ -80,7 +81,7 @@ def phase_table(title, rows):
     return Panel(t, title=title, padding=(1,1))
 
 
-def get_progress(console: Console) -> Progress:
+def get_progress(console: Console) -> Tuple[Panel, Progress]:
     progress = Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -89,4 +90,5 @@ def get_progress(console: Console) -> Progress:
         expand=True,
         console=console,
     )
-    return progress
+    progress_panel = Panel(progress, title="Processing", padding=(1,1))
+    return progress_panel, progress

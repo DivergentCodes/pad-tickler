@@ -30,10 +30,9 @@ phase2_panel = ui.phase_table("Phase 2: recover plaintext block", [
 ])
 
 # Progress status
-progress = ui.get_progress(console)
+progress_panel, progress = ui.get_progress(console)
 t1 = progress.add_task("Current batch", total=50)
 t2 = progress.add_task("Full dataset", total=2000)
-progress_panel = Panel(progress, title="Processing", padding=(1,1))
 
 # Layout
 layout = Layout()

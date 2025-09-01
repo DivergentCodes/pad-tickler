@@ -5,7 +5,7 @@ version: "3"
 tasks:
   default:
     cmds:
-      - "uv run python pad_tickler/main.py"
+      - "uv run python -m pad_tickler"
 
   start-demo-api:
     cmds:

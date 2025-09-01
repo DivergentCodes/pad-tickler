@@ -1,5 +1,5 @@
 [project]
-name = "pad-tickler"
+name = "padtickler"
 version = "0.1.0"
 description = "Padding oracle CLI"
 readme = "README.md"
@@ -12,6 +12,9 @@ dependencies = [
     "structlog>=25.4.0",
     "click>=8.1.0",
 ]
+
+[project.scripts]
+padtickler = "pad_tickler.__main__:main"
 
 [dependency-groups]
 dev = [

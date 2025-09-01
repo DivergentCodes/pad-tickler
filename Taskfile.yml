@@ -1,0 +1,33 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  default:
+    cmds:
+      - "uv run python pad_tickler/main.py"
+
+  start-demo-api:
+    cmds:
+      - uv run python -m demo_api.main
+
+  demo-encrypt:
+    cmds:
+      - 'curl -s -X POST http://localhost:8000/api/encrypt -H "Content-Type: application/json" -d "{\"plaintext\": \"Hello, world!\"}" | jq'
+
+  demo-validate:
+    cmds:
+      - 'curl -s -X POST http://localhost:8000/api/validate -H "Content-Type: application/json" -d "{\"ciphertext_b64\": \"encrypted-ciphertext\"}" | jq'
+
+  test:
+    cmds:
+      - "uv run pytest"
+
+  clean:
+    cmds:
+      - "rm -rf __pycache__"
+      - "rm -rf demo_api/__pycache__"
+      - "rm -rf pad_tickler/__pycache__"
+      - "rm -rf .pytest_cache"
+      - "rm -rf .ruff_cache"
+      - "rm -rf .venv"

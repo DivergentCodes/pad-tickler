@@ -3,6 +3,7 @@ from collections import deque
 from typing import Tuple
 
 from rich.align import Align
+from rich.layout import Layout
 from rich.progress import Progress, TextColumn, BarColumn, SpinnerColumn
 from rich.console import Console
 from rich.panel import Panel
@@ -92,3 +93,38 @@ def get_progress(console: Console) -> Tuple[Panel, Progress]:
     )
     progress_panel = Panel(progress, title="Processing", padding=(1,1))
     return progress_panel, progress
+
+def get_layout(console: Console) -> Tuple[Layout, Progress]:
+    # Data for the run
+    blocks_panel = gen_blocks_table()
+    phase1_panel = phase_table("Phase 1: discover intermediate block", [
+        ("Ciphertext",   "Cₙ₋₁′", "00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f"),
+        ("Padding",      "k = 2", "                                          02 02"),
+        ("Intermediate", "Iₙ",    "?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? d5 1f"),
+    ])
+    phase2_panel = phase_table("Phase 2: recover plaintext block", [
+        ("Intermediate", "Iₙ",    "00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f"),
+        ("Ciphertext",   "Cₙ₋₁′", "00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f"),
+        ("Plaintext",    "Pₙ",    "?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??"),
+    ])
+
+    # Progress status
+    progress_panel, progress = get_progress(console)
+
+    # Layout
+    layout = Layout()
+    layout.split_column(
+        Layout(name="upper", size=12),
+        Layout(name="middle", size=16),
+        Layout(name="lower", size=14),
+    )
+    layout["upper"].update(blocks_panel)
+    layout["middle"].split_row(Layout(name="left", ratio=1), Layout(name="right", ratio=1))
+    layout["left"].split_column(Layout(name="p1", size=8), Layout(name="p2", size=8))
+    layout["p1"].update(phase1_panel)
+    layout["p2"].update(phase2_panel)
+    layout["right"].update(progress_panel)
+
+    LOG_LINES_VISIBLE = 10
+    layout["lower"].update(render_log_panel("Logs", LOG_LINES_VISIBLE))
+    return layout, progress

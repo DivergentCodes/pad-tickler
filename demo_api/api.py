@@ -25,7 +25,7 @@ def encrypt(req: models.EncryptRequest):
         cipher = crypto.CipherSuite.AES_128_CBC.value
         key = crypto.get_key(cipher)
         iv = crypto.get_iv(cipher, random=False)
-        ciphertext = crypto.encrypt(plaintext, cipher, key, iv)
+        ciphertext = crypto.encrypt(cipher, key, iv, plaintext)
         log.info(
             "encrypted",
             cipher=cipher,
@@ -43,8 +43,8 @@ def encrypt(req: models.EncryptRequest):
 
         return models.EncryptResponse(
             alg=cipher,
-            iv_b64=base64.b64encode(iv).decode(),
             ciphertext_b64=base64.b64encode(ciphertext).decode(),
+            ciphertext_hex=ciphertext.hex(),
         )
     except Exception as e:
         traceback.print_exc()
@@ -54,27 +54,24 @@ def encrypt(req: models.EncryptRequest):
 @router.post("/validate", response_model=models.ValidateResponse)
 def validate(req: models.ValidateRequest):
     try:
-        iv_b64 = req.iv_b64
-        iv = base64.b64decode(iv_b64)
+        cipher = crypto.CipherSuite.AES_128_CBC.value
+        key = crypto.get_key(cipher)
+
         ciphertext_b64 = req.ciphertext_b64
         ciphertext = base64.b64decode(ciphertext_b64)
 
-        cipher = crypto.CipherSuite.AES_128_CBC.value
-        key = crypto.get_key(cipher)
         log.info(
             "decrypting",
             cipher=cipher,
 
             key_hex=key.hex(),
-            iv_hex=iv.hex(),
             ciphertext_hex=ciphertext.hex(),
 
             key_len=len(key),
-            iv_len=len(iv),
             ciphertext_len=len(ciphertext),
         )
 
-        plaintext = crypto.decrypt(ciphertext, cipher, key, iv)
+        plaintext = crypto.decrypt(cipher, key, ciphertext)
         log.info(
             "decrypted",
             plaintext=plaintext,

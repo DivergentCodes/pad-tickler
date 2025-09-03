@@ -101,7 +101,7 @@ def get_iv(algorithm: CipherSuite, random: bool = True) -> bytes:
     return iv
 
 
-def encrypt(plaintext: str, algorithm: CipherSuite, key: bytes, iv: bytes) -> bytes:
+def encrypt(algorithm: CipherSuite, key: bytes, iv: bytes, plaintext: str) -> bytes:
     """ Encrypts the plaintext using the given algorithm and key.
     If the algorithm is CBC, it uses the given IV.
     If the algorithm is ECB, it does not use an IV.
@@ -146,11 +146,13 @@ def encrypt(plaintext: str, algorithm: CipherSuite, key: bytes, iv: bytes) -> by
 
     padded = padder.update(plaintext_bytes) + padder.finalize()
     encryptor = cipher.encryptor()
-    ciphertext = encryptor.update(padded) + encryptor.finalize()
+
+    # Prepend the IV to the ciphertext.
+    ciphertext = iv + encryptor.update(padded) + encryptor.finalize()
     return ciphertext
 
 
-def decrypt(ciphertext: bytes, algorithm: CipherSuite, key: bytes, iv: bytes) -> str:
+def decrypt(algorithm: CipherSuite, key: bytes, ciphertext: bytes) -> str:
     """ Decrypts the ciphertext using the given algorithm and key.
     If the algorithm is CBC, it uses the given IV.
     If the algorithm is ECB, it does not use an IV.
@@ -159,20 +161,28 @@ def decrypt(ciphertext: bytes, algorithm: CipherSuite, key: bytes, iv: bytes) ->
     try:
         match algorithm:
             case CipherSuite.AES_128_CBC.value:
+                iv = ciphertext[:16]
                 cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
             case CipherSuite.AES_128_ECB.value:
+                iv = None
                 cipher = Cipher(algorithms.AES(key), modes.ECB())
             case CipherSuite.AES_256_CBC.value:
+                iv = ciphertext[:16]
                 cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
             case CipherSuite.AES_256_ECB.value:
+                iv = None
                 cipher = Cipher(algorithms.AES(key), modes.ECB())
             case CipherSuite.DES_CBC.value:
+                iv = ciphertext[:8]
                 cipher = Cipher(algorithms.DES(key), modes.CBC(iv))
             case CipherSuite.DES_ECB.value:
+                iv = None
                 cipher = Cipher(algorithms.DES(key), modes.ECB())
             case CipherSuite.DES3_CBC.value:
+                iv = ciphertext[:8]
                 cipher = Cipher(algorithms.TripleDES(key), modes.CBC(iv))
             case CipherSuite.DES3_ECB.value:
+                iv = None
                 cipher = Cipher(algorithms.TripleDES(key), modes.ECB())
             case _:
                 raise ValueError(f"Invalid algorithm: {algorithm}")
@@ -181,7 +191,7 @@ def decrypt(ciphertext: bytes, algorithm: CipherSuite, key: bytes, iv: bytes) ->
         raise e
 
     decryptor = cipher.decryptor()
-    padded = decryptor.update(ciphertext) + decryptor.finalize()
+    padded = decryptor.update(ciphertext[16:]) + decryptor.finalize()
     unpadder = padding.PKCS7(128).unpadder()
     unpadded = unpadder.update(padded) + unpadder.finalize()
     return unpadded.decode("utf-8")

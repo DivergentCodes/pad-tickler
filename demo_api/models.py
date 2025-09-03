@@ -9,13 +9,12 @@ class EncryptRequest(BaseModel):
 
 class EncryptResponse(BaseModel):
     alg: crypto.CipherSuite
-    iv_b64: str
     ciphertext_b64: str
+    ciphertext_hex: str
 
 
 class ValidateRequest(BaseModel):
     alg: crypto.CipherSuite
-    iv_b64: str
     ciphertext_b64: str
 
 

@@ -14,6 +14,8 @@ class EncryptResponse(BaseModel):
 
 
 class ValidateRequest(BaseModel):
+    alg: crypto.CipherSuite
+    iv_b64: str
     ciphertext_b64: str
 
 

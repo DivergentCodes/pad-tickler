@@ -2,6 +2,11 @@
 
 version: "3"
 
+vars:
+  PLAINTEXT: "Hello, world!"
+  IV_B64: "L4GNQGz48epdIiVCc2MboQ=="
+  CIPHERTEXT_B64: "mrH+LB63tYaVm7ZG3uFoaw=="
+
 tasks:
   default:
     cmds:
@@ -13,11 +18,11 @@ tasks:
 
   demo-encrypt:
     cmds:
-      - 'curl -s -X POST http://localhost:8000/api/encrypt -H "Content-Type: application/json" -d "{\"plaintext\": \"Hello, world!\"}" | jq'
+      - 'curl -s -X POST http://localhost:8000/api/encrypt -H "Content-Type: application/json" -d "{\"plaintext\": \"{{.PLAINTEXT}}\"}" | jq'
 
   demo-validate:
     cmds:
-      - 'curl -s -X POST http://localhost:8000/api/validate -H "Content-Type: application/json" -d "{\"ciphertext_b64\": \"encrypted-ciphertext\"}" | jq'
+      - 'curl -s -X POST http://localhost:8000/api/validate -H "Content-Type: application/json" -d "{\"ciphertext_b64\": \"{{.CIPHERTEXT_B64}}\"}" | jq'
 
   test:
     cmds:

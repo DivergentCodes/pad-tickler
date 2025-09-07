@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, List, Tuple
 
+import time
 import requests
 
 from pad_tickler.core.utils import b64_encode, b64_decode
@@ -158,11 +159,13 @@ def solve_message(
     plaintext_parts: List[bytes] = []
 
     for idx, c_i in enumerate(blocks):
+        print(f"Solving block {idx + 1}/{len(blocks)}...")
         c_prev = iv if idx == 0 else blocks[idx - 1]
         res = solve_block(submit, c_prev, c_i, block_size=block_size)
         intermediates.append(res.i_bytes)
         per_block.append(res)
         plaintext_parts.append(res.p_bytes)
+        print(f"Block {idx + 1} solved: {res.stats.tries} requests, {res.stats.confirmed_hits} confirmed hits")
 
     return SolveMessageResult(
         plaintext=b"".join(plaintext_parts),
@@ -178,14 +181,19 @@ def submit_http(prev: bytes, target: bytes) -> bool:
         "alg": "AES-128-CBC",
         "ciphertext_b64": ciphertext_b64
     }
-    response = requests.post("http://localhost:8000/api/validate", json=payload)
-    return response.status_code == 200
+    try:
+        response = requests.post("http://127.0.0.1:8000/api/validate", json=payload, timeout=10)
+        time.sleep(0.01)  # Small delay to prevent overwhelming the server
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Request failed: {e}")
+        return False
 
 def encrypt_plaintext(plaintext_b64: str) -> str:
     payload = {
         "plaintext_b64": plaintext_b64
     }
-    response = requests.post("http://localhost:8000/api/encrypt", json=payload)
+    response = requests.post("http://127.0.0.1:8000/api/encrypt", json=payload)
     if response.status_code != 200:
         raise ValueError(f"Failed to encrypt plaintext: {response.status_code} {response.text}")
     return response.json()["ciphertext_b64"]
@@ -246,8 +254,8 @@ If Teddy can't unstick my dad, I'll find another way"""
     iv = ct[:16]
     ct = ct[16:]
 
-    print(f"IV ({type(iv)}, {len(iv)} bytes): {ct[:16].hex()}")
-    print(f"CT ({type(ct)}, {len(ct)} bytes): {ct[16:].hex()}")
+    print(f"IV ({type(iv)}, {len(iv)} bytes): {iv.hex()}")
+    print(f"CT ({type(ct)}, {len(ct)} bytes): {ct.hex()}")
 
     res = solve_message(submit_http, iv, ct, block_size=16)
     print(f"Plaintext: {res.plaintext}")

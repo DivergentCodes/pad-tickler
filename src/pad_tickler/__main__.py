@@ -1,11 +1,12 @@
-import base64
 from typing import Tuple
 import logging
 from time import sleep
 
 from rich.live import Live
 
-from src.pad_tickler.ui import ui
+from pad_tickler.ui import ui
+from pad_tickler.models.cipher_block import CipherBlockSet
+from pad_tickler.core.utils import b64_decode
 
 
 POC_ARGS = {
@@ -34,24 +35,30 @@ logger.addHandler(ui.get_ui_log_handler())
 
 
 def load_ciphertext() -> Tuple[bytearray, bytearray]:
-    ciphertext = bytearray(base64.b64decode(POC_ARGS["payload"]["ciphertext_b64"]))
-    iv = bytearray(base64.b64decode(POC_ARGS["payload"]["iv_b64"]))
+    ciphertext = bytearray(b64_decode(POC_ARGS["payload"]["ciphertext_b64"]))
+    iv = bytearray(b64_decode(POC_ARGS["payload"]["iv_b64"]))
     return ciphertext, iv
 
 
 def main():
-    try:
-        # Highest level UI components
-        console = ui.get_console()
-        layout, progress = ui.get_layout(console)
-        log_lines_visible = layout["lower"].size - 2
+    # Highest level UI components
+    console = ui.get_console()
+    layout, progress = ui.get_layout(console)
+    log_lines_visible = layout["lower"].size - 2
 
+    try:
         # Live loop
         with Live(layout, console=console, screen=True, transient=False, auto_refresh=False, refresh_per_second=8) as live:
 
             ciphertext, iv = load_ciphertext()
-            ciphertext_blocks = [iv] + [ciphertext[i:i+16] for i in range(0, len(ciphertext), 16)]
+            iv_block = CipherBlockSet(iv)
+            ciphertext_blocks = CipherBlockSet(ciphertext)
+            intermediate_blocks = CipherBlockSet(b"")
+
+            layout["upper"].update(ui.gen_blocks_table(iv_block, ciphertext_blocks))
             logger.info(f"Loaded ciphertext blocks: len(ciphertext_blocks)={len(ciphertext_blocks)}")
+            logger.info(f"IV block: {iv_block.hex_pretty()}")
+            logger.info(f"Ciphertext blocks: {ciphertext_blocks.hex_pretty()}")
 
             # Tasks
             t1 = progress.add_task("Current batch", total=50)

@@ -24,3 +24,6 @@ dev = [
 demo = [
     "fastapi[standard]>=0.116.1",
 ]
+
+[tool.setuptools.packages.find]
+where = ["src"]

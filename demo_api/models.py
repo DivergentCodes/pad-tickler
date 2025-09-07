@@ -4,7 +4,7 @@ from . import crypto
 
 
 class EncryptRequest(BaseModel):
-    plaintext: str
+    plaintext_b64: str
 
 
 class EncryptResponse(BaseModel):
@@ -15,7 +15,7 @@ class EncryptResponse(BaseModel):
 
 class ValidateRequest(BaseModel):
     alg: crypto.CipherSuite
-    ciphertext_b64: str
+    ciphertext_b64: bytes
 
 
 class ValidateResponse(BaseModel):

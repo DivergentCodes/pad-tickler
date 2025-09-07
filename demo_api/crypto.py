@@ -1,10 +1,8 @@
 import os
-import base64
 import pathlib
-from typing import Optional
 from enum import Enum
 
-from cryptography.hazmat.primitives import padding, hashes, hmac
+from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import structlog
 
@@ -101,13 +99,11 @@ def get_iv(algorithm: CipherSuite, random: bool = True) -> bytes:
     return iv
 
 
-def encrypt(algorithm: CipherSuite, key: bytes, iv: bytes, plaintext: str) -> bytes:
+def encrypt(algorithm: CipherSuite, key: bytes, iv: bytes, plaintext: bytes) -> bytes:
     """ Encrypts the plaintext using the given algorithm and key.
     If the algorithm is CBC, it uses the given IV.
     If the algorithm is ECB, it does not use an IV.
     """
-
-    plaintext_bytes = plaintext.encode("utf-8")
 
     padder_128 = padding.PKCS7(128).padder()
     padder_64 = padding.PKCS7(64).padder()
@@ -144,7 +140,7 @@ def encrypt(algorithm: CipherSuite, key: bytes, iv: bytes, plaintext: str) -> by
         log.error("encryption failed", error=e)
         raise e
 
-    padded = padder.update(plaintext_bytes) + padder.finalize()
+    padded = padder.update(plaintext) + padder.finalize()
     encryptor = cipher.encryptor()
 
     # Prepend the IV to the ciphertext.
@@ -152,7 +148,7 @@ def encrypt(algorithm: CipherSuite, key: bytes, iv: bytes, plaintext: str) -> by
     return ciphertext
 
 
-def decrypt(algorithm: CipherSuite, key: bytes, ciphertext: bytes) -> str:
+def decrypt(algorithm: CipherSuite, key: bytes, ciphertext: bytes) -> bytes:
     """ Decrypts the ciphertext using the given algorithm and key.
     If the algorithm is CBC, it uses the given IV.
     If the algorithm is ECB, it does not use an IV.
@@ -194,4 +190,4 @@ def decrypt(algorithm: CipherSuite, key: bytes, ciphertext: bytes) -> str:
     padded = decryptor.update(ciphertext[16:]) + decryptor.finalize()
     unpadder = padding.PKCS7(128).unpadder()
     unpadded = unpadder.update(padded) + unpadder.finalize()
-    return unpadded.decode("utf-8")
+    return unpadded

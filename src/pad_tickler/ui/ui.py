@@ -1,6 +1,6 @@
 import logging
 from collections import deque
-from typing import Tuple
+from typing import List, Tuple
 
 from rich.align import Align
 from rich.layout import Layout
@@ -8,6 +8,8 @@ from rich.progress import Progress, TextColumn, BarColumn, SpinnerColumn
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+
+from pad_tickler.models.cipher_block import CipherBlockSet
 
 LOG_BUFFER = deque(maxlen=5000)
 LEVEL_STYLE = {
@@ -59,20 +61,46 @@ def render_log_panel(title: str, max_lines: int) -> Panel:
     return Panel(grid, title=title, padding=(0,1))
 
 
-def gen_blocks_table():
+def gen_blocks_table(iv_block: CipherBlockSet, ciphertext_blocks: CipherBlockSet) -> Panel:
+    default_block_string = "?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??"
+
+    # Table & headers
     t = Table(show_header=True, show_lines=False, show_edge=False, padding=(0,0))
     t.add_column("Block (n)", justify="center", style="dim", width=10, no_wrap=True, overflow="crop")
     t.add_column("Ciphertext (Cₙ)", justify="center", style="blue", width=49, no_wrap=True, overflow="crop")
     t.add_column("Intermediate (Iₙ)", justify="center", style="yellow", width=49, no_wrap=True, overflow="crop")
     t.add_column("Plaintext (Pₙ)", justify="center", style="green", width=49, no_wrap=True, overflow="crop")
-    t.add_row("IV", "?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??", "", "")
-    t.add_row("00000000", *["?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??"]*3)
-    t.add_row("00000001", *["?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??"]*3)
+
+    # IV
+    if not iv_block:
+        iv_string = default_block_string
+    else:
+        iv_string = " ".join([f"{b:02x}" for b in iv_block.current_block()])
+    t.add_row("IV", iv_string, "", "")
+
+    if ciphertext_blocks:
+        for i, block in enumerate(ciphertext_blocks.blocks):
+            block_string = " ".join([f"{b:02x}" for b in block])
+            t.add_row(f"{i:08x}", block_string, "", "")
+
     t = Align(t, align="center")
     return Panel(t, title="Blocks", padding=(1,1))
 
 
-def phase_table(title, rows):
+def phase_table(title, rows) -> Panel:
+    t = Table(padding=(0,2), show_header=False, show_lines=False, show_edge=False)
+    t.add_column("Block", style="cyan", width=12, no_wrap=True, overflow="crop")
+    t.add_column("Var",   style="cyan", width=6,  no_wrap=True, overflow="crop")
+    t.add_column("Bytes", style="green", width=48, no_wrap=True, overflow="crop")
+    for r in rows: t.add_row(*r)
+    t = Align(t, align="center")
+    return Panel(t, title=title, padding=(1,1))
+
+
+
+
+
+def brute_force_table(title, rows) -> Panel:
     t = Table(padding=(0,2), show_header=False, show_lines=False, show_edge=False)
     t.add_column("Block", style="cyan", width=12, no_wrap=True, overflow="crop")
     t.add_column("Var",   style="cyan", width=6,  no_wrap=True, overflow="crop")
@@ -96,7 +124,7 @@ def get_progress(console: Console) -> Tuple[Panel, Progress]:
 
 def get_layout(console: Console) -> Tuple[Layout, Progress]:
     # Data for the run
-    blocks_panel = gen_blocks_table()
+    blocks_panel = gen_blocks_table(CipherBlockSet([]), CipherBlockSet([]))
     phase1_panel = phase_table("Phase 1: discover intermediate block", [
         ("Ciphertext",   "Cₙ₋₁′", "00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f"),
         ("Padding",      "k = 2", "                                          02 02"),

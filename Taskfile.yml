@@ -6,11 +6,50 @@ vars:
   ALG: "AES-128-CBC"
   PLAINTEXT: "Hello, world!"
   CIPHERTEXT_B64: "L4GNQGz48epdIiVCc2MboZqx/iwet7WGlZu2Rt7haGs="
+  PLAINTEXT_LONG2: "Bad stuff happens in the bathroom. I'm just glad that it happens in a vacuum. Can't let thеm see me with my pants down. Coasters magazine is gonna bе my big chance now. But I'll be outta here in no time. I'll be doing interviews and feelin' just fine. Today is gonna be a great day. I'll do Coasters magazine and blow everyone away."
+  PLAINTEXT_LONG3: "aaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbccccccccccccccccdddddddddddddddd"
+  CIPHERTEXT_LONG3_B64: "L4GNQGz48epdIiVCc2Mboflt7i8qi5spwF2Xvyl2tWuqWd9g3uSgl5gGmupYOjjihRV9o0A1Y5c0VRb/b/roDa9ic8EgnmN0GGhN5x8FrSte5fji98f1d25KfgWgSYoL"
+  PLAINTEXT_LONG: |
+    Bad stuff happens in the bathroom
+    I'm just glad that it happens in a vacuum
+    Can't let thеm see me with my pants down
+    Coasters magazine is gonna bе my big chance now
+    But I'll be outta here in no time
+    I'll be doing interviews and feelin' just fine
+    Today is gonna be a great day
+    I'll do Coasters magazine and blow everyone away
+    Let's be clear
+    I did absolutely nothing wrong, I'm not to blame, it's not my fault
+    This is just to say
+    If Gene had pooped like every day, this would have all just blown away
+    But he'll be out of there in no time
+    No one's gonna blame me, I'll be doing just fine
+    Today is gonna be a great day
+    If Teddy can't unstick my dad, I'll find another way
+  PLAINTEXT_JSON: |
+    {
+      "alg": "RS256",
+      "typ": "JWT"
+    }
+    {
+      "client_id": "YzEzMGdoMHJnOHBiOG1ibDhyNTA=",
+      "response_type": "code",
+      "scope": "introscpect_tokens, revoke_tokens",
+      "iss": "bjhIRjM1cXpaa21zdWtISnp6ejlMbk44bTlNZjk3dXE=",
+      "sub": "YzEzMGdoMHJnOHBiOG1ibDhyNTA=",
+      "aud": "https://localhost:8443/{tid}/{aid}/oauth2/authorize",
+      "jti": "1516239022",
+      "exp": "2021-05-17T07:09:48.000+0545"
+    }
 
 tasks:
   default:
     cmds:
       - "uv run python -m pad_tickler"
+
+  install:
+    cmds:
+      - "uv pip install -e ."
 
   start-demo-api:
     cmds:
@@ -18,11 +57,11 @@ tasks:
 
   demo-encrypt:
     cmds:
-      - 'curl -s -X POST http://localhost:8000/api/encrypt -H "Content-Type: application/json" -d "{\"plaintext\": \"{{.PLAINTEXT}}\"}" | jq'
+      - 'curl -s -X POST http://localhost:8000/api/encrypt -H "Content-Type: application/json" -d "{\"plaintext\": \"{{.PLAINTEXT_LONG3}}\"}" | jq'
 
   demo-validate:
     cmds:
-      - 'curl -s -X POST http://localhost:8000/api/validate -H "Content-Type: application/json" -d "{\"alg\": \"{{.ALG}}\", \"ciphertext_b64\": \"{{.CIPHERTEXT_B64}}\"}" | jq'
+      - 'curl -s -X POST http://localhost:8000/api/validate -H "Content-Type: application/json" -d "{\"alg\": \"{{.ALG}}\", \"ciphertext_b64\": \"{{.CIPHERTEXT_LONG3_B64}}\"}" | jq'
 
   test:
     cmds:

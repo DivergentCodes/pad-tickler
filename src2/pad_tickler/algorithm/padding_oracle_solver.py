@@ -7,24 +7,23 @@ import time
 import requests
 
 from pad_tickler.core.utils import b64_encode, b64_decode
+from pad_tickler.models.solver_state import BlockStats
 
 SubmitFn = Callable[[bytes, bytes], bool]
 
 
-@dataclass
-class BlockStats:
-    tries: int = 0
-    positives: int = 0
-    negatives: int = 0
-    confirmed_hits: int = 0
-    notes: List[str] = field(default_factory=list)
+MAX_POSSIBLE_STEPS = 0
+CURRENT_STEP = 0
+BYTES_FOUND = 0
+BYTES_TOTAL = 0
+COMPLETION_PERCENT = 0.00
 
 
 @dataclass
 class SolveBlockResult:
     i_bytes: bytes           # recovered I_i (pre-XOR intermediate)
     p_bytes: bytes           # recovered plaintext block (requires original C_{i-1}/IV)
-    stats: BlockStats
+    stats: BlockStats | None
 
 
 @dataclass
@@ -54,6 +53,8 @@ def _confirm_hit(submit: SubmitFn, cprev_prime: bytearray, ctarget: bytes, k: in
 
 def solve_block(
     submit: SubmitFn,
+    block_count: int,
+    n: int,
     cprev_original: bytes,     # original previous block (IV for block 0)
     ctarget: bytes,            # target ciphertext block C_i
     *,
@@ -64,8 +65,10 @@ def solve_block(
     Recover I_i (and P_i) for a single CBC block using a padding oracle.
     Only sends two-block messages: (C'_{i-1} || C_i).
     """
+    global CURRENT_STEP, MAX_POSSIBLE_STEPS, COMPLETION_PERCENT, BYTES_FOUND, BYTES_TOTAL
+
     assert len(cprev_original) == block_size and len(ctarget) == block_size
-    stats = BlockStats()
+    #stats = BlockStats()
     last = block_size - 1
 
     # Storage for intermediate bytes I_i (fill right->left)
@@ -76,12 +79,12 @@ def solve_block(
 
     # Optional: observe whether the original pair is valid (not used for logic)
     ok_orig = submit(cprev_original, ctarget)
-    stats.tries += 1
-    if ok_orig:
-        stats.positives += 1
-        stats.notes.append("original pair decrypts to valid PKCS#7")
-    else:
-        stats.negatives += 1
+    #stats.tries += 1
+    # if ok_orig:
+    #     #stats.positives += 1
+    #     #stats.notes.append("original pair decrypts to valid PKCS#7")
+    # else:
+    #     #stats.negatives += 1
 
     # For k = 1..block_size
     for k in range(1, block_size + 1):
@@ -100,30 +103,37 @@ def solve_block(
 
         found = False
         for g in range(256):
+            CURRENT_STEP += 1
+
             # Skip trivial original only for k==1 (classic optimization)
             if skip_trivial_original and k == 1 and g == original_at_i:
                 continue
 
             cprev_prime[i] = g
             ok = submit(bytes(cprev_prime), ctarget)
-            stats.tries += 1
+            #stats.tries += 1
             if not ok:
-                stats.negatives += 1
+                #stats.negatives += 1
+                print(cprev_prime.hex(" "), f"\t{COMPLETION_PERCENT:.2f}% ({BYTES_FOUND}/{BYTES_TOTAL}) | n={n+1}/{block_count} | i={i} | k={k} | g={g:02x} | ok={ok}")
                 continue
 
             # Positive: confirm by flipping a non-tail byte
             confirmed, flip_idx = _confirm_hit(submit, cprev_prime, ctarget, k)
-            stats.tries += (0 if flip_idx == -1 else 1)  # _confirm_hit already counted internally
+            #stats.tries += (0 if flip_idx == -1 else 1)  # _confirm_hit already counted internally
             if confirmed:
-                stats.positives += 1 + (0 if flip_idx == -1 else 1)
-                stats.confirmed_hits += 1
+                #stats.positives += 1 + (0 if flip_idx == -1 else 1)
+                #stats.confirmed_hits += 1
                 I[i] = g ^ k
                 found = True
+                BYTES_FOUND += 1
+                COMPLETION_PERCENT = BYTES_FOUND / BYTES_TOTAL * 100
+                print(cprev_prime.hex(" "), f"\t{COMPLETION_PERCENT:.2f}% ({BYTES_FOUND}/{BYTES_TOTAL}) | n={n+1}/{block_count} | i={i} | k={k} | g={g:02x} | ok={ok} | confirmed={confirmed} | flip_idx={flip_idx}")
                 break
             else:
                 # Not confirmed -> likely false positive (e.g., collided with larger original padding)
-                stats.positives += 1
-                stats.negatives += 1
+                #stats.positives += 1
+                #stats.negatives += 1
+                print(cprev_prime.hex(" "), f"\t{COMPLETION_PERCENT:.2f}% ({BYTES_FOUND}/{BYTES_TOTAL}) | n={n+1}/{block_count} | i={i} | k={k} | g={g:02x} | ok={ok} | confirmed={confirmed} | flip_idx={flip_idx}")
                 continue
 
         if not found:
@@ -134,7 +144,7 @@ def solve_block(
     # Plaintext uses the **original** previous block (not the mutated one)
     p_block = bytes((i_block[b] ^ cprev_original[b]) for b in range(block_size))
 
-    return SolveBlockResult(i_bytes=i_block, p_bytes=p_block, stats=stats)
+    return SolveBlockResult(i_bytes=i_block, p_bytes=p_block, stats=None)
 
 
 def solve_message(
@@ -150,6 +160,8 @@ def solve_message(
     - ciphertext: N*16 bytes
     Returns plaintext, intermediates per block, and per-block stats.
     """
+    global MAX_POSSIBLE_STEPS, CURRENT_STEP, BYTES_FOUND, BYTES_TOTAL
+
     assert len(iv) == block_size
     assert len(ciphertext) % block_size == 0, "ciphertext must be block-aligned"
 
@@ -157,15 +169,24 @@ def solve_message(
     intermediates: List[bytes] = []
     per_block: List[SolveBlockResult] = []
     plaintext_parts: List[bytes] = []
+    block_count = len(blocks)
 
-    for idx, c_i in enumerate(blocks):
-        print(f"Solving block {idx + 1}/{len(blocks)}...")
-        c_prev = iv if idx == 0 else blocks[idx - 1]
-        res = solve_block(submit, c_prev, c_i, block_size=block_size)
+    MAX_POSSIBLE_STEPS = 256 * 16 * block_count
+    CURRENT_STEP = 0
+    BYTES_FOUND = 0
+    BYTES_TOTAL = len(ciphertext)
+
+    for n, c_i in enumerate(blocks):
+        print(f"Solving block {n + 1}/{block_count}...")
+        c_prev = iv if n == 0 else blocks[n - 1]
+
+        # Solve an individual block
+        res = solve_block(submit, block_count, n, c_prev, c_i, block_size=block_size)
+
         intermediates.append(res.i_bytes)
         per_block.append(res)
         plaintext_parts.append(res.p_bytes)
-        print(f"Block {idx + 1} solved: {res.stats.tries} requests, {res.stats.confirmed_hits} confirmed hits")
+        print(f"Block {n + 1}/{block_count} solved: {res.stats.tries} requests, {res.stats.confirmed_hits} confirmed hits") if res.stats else print(f"Block {n + 1}/{block_count} solved: no stats") # type: ignore
 
     return SolveMessageResult(
         plaintext=b"".join(plaintext_parts),
@@ -211,7 +232,7 @@ def demo1():
     print("Plaintext (raw bytes):", res.plaintext)
     print("Plaintext (hex):", res.plaintext.hex(" "))
     for i, blk in enumerate(res.per_block):
-        print(f"[block {i}] tries={blk.stats.tries} pos={blk.stats.positives} neg={blk.stats.negatives} confirmed={blk.stats.confirmed_hits}")
+        print(f"[block {i}] tries={blk.stats.tries} pos={blk.stats.positives} neg={blk.stats.negatives} confirmed={blk.stats.confirmed_hits}") if blk.stats else print(f"[block {i}/{len(res.per_block)}] no stats") # type: ignore
 
 def demo2():
     ct_long3_b64 = "L4GNQGz48epdIiVCc2Mboflt7i8qi5spwF2Xvyl2tWuqWd9g3uSgl5gGmupYOjjihRV9o0A1Y5c0VRb/b/roDa9ic8EgnmN0GGhN5x8FrSte5fji98f1d25KfgWgSYoL"
@@ -261,4 +282,6 @@ If Teddy can't unstick my dad, I'll find another way"""
     print(f"Plaintext: {res.plaintext}")
 
 if __name__ == "__main__":
+    #demo1()
+    #demo2()
     demo3()

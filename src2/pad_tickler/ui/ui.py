@@ -97,9 +97,6 @@ def phase_table(title, rows) -> Panel:
     return Panel(t, title=title, padding=(1,1))
 
 
-
-
-
 def brute_force_table(title, rows) -> Panel:
     t = Table(padding=(0,2), show_header=False, show_lines=False, show_edge=False)
     t.add_column("Block", style="cyan", width=12, no_wrap=True, overflow="crop")

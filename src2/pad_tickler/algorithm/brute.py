@@ -142,8 +142,8 @@ def oracle_test(block_state: BlockState) -> bool:
         RESPONSE_KEYS[key] = RESPONSE_KEYS.get(key, 0) + 1
 
     if "Invalid padding bytes" not in response.text:
-        print(f"Prior: {pretty_block(prior)}")
-        print(f"Target: {pretty_block(target)}")
+        print(f"Prior:    {pretty_block(prior)}")
+        print(f"Target:   {pretty_block(target)}")
         print(f"Combined: {pretty_block(ciphertext)}")
         print(response.text)
         print("\n")

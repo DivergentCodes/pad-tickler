@@ -3,34 +3,45 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.live import Live
 
-from pad_tickler.event_queue import SingleSlotQueue
-from pad_tickler.event_snapshot import SolverState
+from pad_tickler.state_queue import SingleSlotQueue
+from pad_tickler.state_snapshot import StateSnapshot
 
 
-# ---- Rendering ----
-def render(state: Optional[SolverState]):
+def render(state: Optional[StateSnapshot]):
     """Render the solver state."""
     if state is None:
         return Panel("Waiting for first update…", title="Padding Oracle", border_style="dim")
 
-    t = Table(title=f"Block {state.block_index_n}  |  Byte {state.byte_index_i}  |  v{state.event_version}")
-    t.add_column("Idx", justify="right")
-    t.add_column("Plaintext (hex)")
-    for idx, block in enumerate(state.plaintext_n):
-        hexrow = block.hex() if block else ""
-        # highlight the current byte in the current block (optional)
-        if idx == state.block_index_n and 0 <= state.byte_index_i < state.block_size and block:
-            b = bytearray(block)
-            # mark byte with brackets for visibility
-            hexbytes = [f"{b[i]:02x}" for i in range(len(b))]
-            hexbytes[state.byte_index_i] = f"[{hexbytes[state.byte_index_i]}]"
-            hexrow = " ".join(hexbytes)
-        else:
-            hexrow = " ".join(block.hex()[i:i+2] for i in range(0, len(block)*2, 2))
-        t.add_row(str(idx), hexrow)
-    return t
+    if len(state.ciphertext_n) != len(state.intermediate_n) or len(state.ciphertext_n) != len(state.plaintext_n):
+        raise ValueError("Ciphertext, intermediate, and plaintext must have the same number of blocks")
 
-def ui_loop(state_queue: SingleSlotQueue[SolverState]) -> None:
+    # Create the UI table.
+    ui_table = Table(title=f"Block {state.block_index_n} / {state.block_count - 1}  |  Byte {state.byte_index_i}  |  v{state.state_version}")
+    ui_table.add_column("Idx", justify="right")
+    ui_table.add_column("Ciphertext (hex)")
+    ui_table.add_column("Intermediate (hex)")
+    ui_table.add_column("Plaintext (hex)")
+
+    block_count = len(state.ciphertext_n)
+    placeholder_block = " ".join(["??"] * state.block_size * 2)
+    for idx in range(block_count):
+
+        # Get the blocks from the state snapshot.
+        cn_block = state.ciphertext_n[idx]
+        intermediate_block = state.intermediate_n[idx]
+        plaintext_block = state.plaintext_n[idx]
+
+        # Convert the blocks to displayable hex strings.
+        cn_hex = cn_block.hex(" ") if cn_block else placeholder_block
+        intermediate_hex = intermediate_block.hex(" ") if intermediate_block else placeholder_block
+        plaintext_hex = plaintext_block.hex(" ") if plaintext_block else placeholder_block
+
+        # Add the blocks to the UI table.
+        ui_table.add_row(str(idx), cn_hex, intermediate_hex, plaintext_hex)
+
+    return ui_table
+
+def ui_loop(state_queue: SingleSlotQueue[StateSnapshot]) -> None:
     """Loop the UI."""
     with Live(render(None), refresh_per_second=30, screen=False) as live:
         while True:

@@ -2,11 +2,10 @@ from typing import Generic, TypeVar, Optional
 import threading
 
 
-# ---- Size-1, latest-only queue (single consumer) ----
 T = TypeVar("T")
 
 class SingleSlotQueue(Generic[T]):
-    """Thread-safe, size=1, latest-wins queue. One consumer reads the newest item."""
+    """Thread-safe, size=1, latest-wins queue. Consumers read the latest item."""
     def __init__(self) -> None:
         self._cv = threading.Condition()
         self._has_value = False

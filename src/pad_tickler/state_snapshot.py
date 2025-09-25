@@ -12,11 +12,7 @@ class StateSnapshot:
     byte_value_g: int
     pad_length_k: int
 
-    # Original ciphertext block n.
-    ciphertext_n: Tuple[bytes, ...] = field(default_factory=tuple)
-    # Scratch of ciphertext block n-1 to find the corresponding intermediate block.
-    ciphertext_n_1_prime: Tuple[bytes, ...] = field(default_factory=tuple)
-    # Intermediate block n to find the corresponding plaintext block.
-    intermediate_n: Tuple[bytes, ...] = field(default_factory=tuple)
-    # Discovered plaintext block n.
-    plaintext_n: Tuple[bytes, ...] = field(default_factory=tuple)
+    ciphertext: Tuple[bytes | None, ...] = field(default_factory=tuple)
+    ciphertext_prime: Tuple[bytes | None, ...] = field(default_factory=tuple)
+    intermediate: Tuple[bytes | None, ...] = field(default_factory=tuple)
+    plaintext: Tuple[bytes | None, ...] = field(default_factory=tuple)

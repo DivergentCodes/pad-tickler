@@ -1,11 +1,21 @@
 from dataclasses import dataclass, field
 from typing import Tuple
 
-# ---- Minimal immutable snapshot (adapt to your SolverState) ----
 @dataclass(frozen=True, slots=True)
 class SolverState:
-    version: int
-    block_index: int
-    byte_index: int
-    block_size: int = 16
-    plaintext_n: Tuple[bytes, ...] = field(default_factory=tuple)  # tuple of 16-byte blocks
+    """ Minimal immutable snapshot. """
+    event_version: int
+    block_size: int
+    block_index_n: int
+    byte_index_i: int
+    byte_value_g: int
+    pad_length_k: int
+
+    # Original ciphertext block n.
+    ciphertext_n: Tuple[bytes, ...] = field(default_factory=tuple)
+    # Scratch of ciphertext block n-1 to find the corresponding intermediate block.
+    ciphertext_n_1_prime: Tuple[bytes, ...] = field(default_factory=tuple)
+    # Intermediate block n to find the corresponding plaintext block.
+    intermediate_n: Tuple[bytes, ...] = field(default_factory=tuple)
+    # Discovered plaintext block n.
+    plaintext_n: Tuple[bytes, ...] = field(default_factory=tuple)

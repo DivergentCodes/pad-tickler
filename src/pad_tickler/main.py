@@ -83,7 +83,9 @@ def solver():
     iv, ct = values1()
     #iv, ct = values2()
 
-    t = threading.Thread(target=solve_message, args=(submit_http, state_queue, iv, ct), daemon=True)
+    ciphertext = iv + ct
+
+    t = threading.Thread(target=solve_message, args=(submit_http, state_queue, ciphertext), daemon=True)
     t.start()
     try:
         ui_loop(state_queue)

@@ -102,7 +102,6 @@ def _confirm_hit(submit: SubmitFn, cprev_prime: bytearray, ctarget: bytes, k: in
 def solve_message(
     submit: SubmitFn,
     state_queue: SingleSlotQueue[StateSnapshot],
-    iv: bytes,
     ciphertext: bytes,
     *,
     block_size: int = 16,
@@ -115,7 +114,6 @@ def solve_message(
     """
     global CURRENT_STEP, MAX_POSSIBLE_STEPS, COMPLETION_PERCENT, BYTES_FOUND, BYTES_TOTAL
 
-    assert len(iv) == block_size
     assert len(ciphertext) % block_size == 0, "ciphertext must be block-aligned"
 
     # Break the ciphertext into blocks.
@@ -134,10 +132,10 @@ def solve_message(
 
     state_version = 0
 
-    for block_index_n, ciphertext_n in enumerate(ciphertext_blocks):
+    for block_index_n, ciphertext_n in enumerate(ciphertext_blocks, start=1):
 
         #print(f"Solving block {n + 1}/{block_count}...")
-        ciphertext_prime_n1 = bytearray(iv) if block_index_n == 0 else ciphertext_prime_blocks[block_index_n - 1]
+        ciphertext_prime_n1 = ciphertext_prime_blocks[block_index_n - 1]
 
         #########################################################
         # Solve an individual block

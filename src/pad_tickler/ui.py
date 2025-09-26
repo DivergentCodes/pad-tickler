@@ -30,17 +30,17 @@ def render(state: Optional[StateSnapshot]):
     for block_n in range(block_count):
 
         # Get the blocks from the state snapshot.
-        ciphertext_block_n = state.ciphertext[block_n]
+        ciphertext_prime_block_n = state.ciphertext_prime[block_n]
         intermediate_block_n = state.intermediate[block_n]
         plaintext_block_n = state.plaintext[block_n]
 
         # Convert the blocks to displayable hex strings.
-        ciphertext_string_n = block_to_string(ciphertext_block_n)
+        ciphertext_prime_string_n = block_to_string(ciphertext_prime_block_n)
         intermediate_string_n = block_to_string(intermediate_block_n)
         plaintext_string_n = block_to_string(plaintext_block_n)
 
         # Add the blocks to the UI table.
-        ui_table.add_row(str(block_n), ciphertext_string_n, intermediate_string_n, plaintext_string_n)
+        ui_table.add_row(str(block_n), ciphertext_prime_string_n, intermediate_string_n, plaintext_string_n)
 
     return ui_table
 

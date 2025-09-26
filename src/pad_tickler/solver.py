@@ -1,3 +1,4 @@
+from copy import deepcopy
 import random
 import time
 from typing import Callable, Tuple
@@ -64,6 +65,22 @@ def demo_producer(state_queue: SingleSlotQueue[StateSnapshot], blocks: int = 6, 
     state_queue.close()
 
 
+def submit_http(prev_block: bytes, target_block: bytes) -> bool:
+    ciphertext = prev_block + target_block
+    ciphertext_b64 = b64_encode(ciphertext)
+    payload = {
+        "alg": "AES-128-CBC",
+        "ciphertext_b64": ciphertext_b64
+    }
+    try:
+        response = requests.post("http://127.0.0.1:8000/api/validate", json=payload, timeout=10)
+        time.sleep(0.01)  # Small delay to prevent overwhelming the server
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Request failed: {e}")
+        return False
+
+
 def _confirm_hit(submit: SubmitFn, cprev_prime: bytearray, ctarget: bytes, k: int) -> Tuple[bool, int]:
     """
     Flip a byte **outside** the last k bytes (i.e., index < 16 - k) and re-submit.
@@ -105,59 +122,65 @@ def solve_message(
     ciphertext_blocks = [ciphertext[i:i + block_size] for i in range(0, len(ciphertext), block_size)]
     block_count = len(ciphertext_blocks)
 
-    # Initialize the intermediate and plaintext blocks.
+    # Initialize other sets of blocks.
+    ciphertext_prime_blocks = [bytearray(block) for block in ciphertext_blocks]
     intermediate_blocks = [[None for _ in range(block_size)] for _ in range(block_count)]
     plaintext_blocks = [[None for _ in range(block_size)] for _ in range(block_count)]
 
-    MAX_POSSIBLE_STEPS = 256 * 16 * block_count
+    MAX_POSSIBLE_STEPS = 256 * block_size * block_count
     CURRENT_STEP = 0
     BYTES_FOUND = 0
     BYTES_TOTAL = len(ciphertext)
 
     state_version = 0
 
-    for n, c_i in enumerate(ciphertext_blocks):
+    for block_index_n, ciphertext_n in enumerate(ciphertext_blocks):
+
+        #print(f"Solving block {n + 1}/{block_count}...")
+        ciphertext_prime_n1 = bytearray(iv) if block_index_n == 0 else ciphertext_prime_blocks[block_index_n - 1]
+
+        #########################################################
+        # Solve an individual block
+        #res = solve_block(submit, block_count, n, c_prev, c_i, block_size=block_size)
+        skip_trivial_original = True
+
+
+        assert len(ciphertext_prime_n1) == block_size and len(ciphertext_n) == block_size
+        #stats = BlockStats()
+        last = block_size - 1
+
+        # Storage for intermediate bytes I_i (fill right->left)
+        intermediate_n = intermediate_blocks[block_index_n]
+
+        # We'll mutate a working copy of C_{i-1}
+        # print(f"ciphertext_prime_n1 type before: {type(ciphertext_prime_n1)}")
+        # ciphertext_prime_n1 = bytearray(ciphertext_prime_n1)
+        # print(f"ciphertext_prime_n1 type after: {type(ciphertext_prime_n1)}")
+        # breakpoint()
 
         # Create a new snapshot of the state.
+        intermediate_i = block_size - 1 # Start from the last byte position.
+        byte_value_g = 0 # Start with byte value 0.
+        pad_length_k = 1 # Start with padding length 1.
+
         state_version += 1
         snapshot = StateSnapshot(
             state_version=state_version,
             block_count=block_count,
             block_size=block_size,
-            block_index_n=n,
-            byte_index_i=block_size - 1,  # Start from the last byte
-            byte_value_g=0,
-            pad_length_k=1,  # Start with padding length 1
+            block_index_n=block_index_n,
+            byte_index_i=intermediate_i,
+            byte_value_g=byte_value_g,
+            pad_length_k=pad_length_k,
             ciphertext=tuple(tuple(block) for block in ciphertext_blocks),
-            ciphertext_prime=tuple(tuple(block) for block in ciphertext_blocks),
+            ciphertext_prime=tuple(tuple(block) for block in ciphertext_prime_blocks),
             intermediate=intermediate_blocks,
             plaintext=plaintext_blocks,
         )
         state_queue.publish(snapshot)
 
-        #print(f"Solving block {n + 1}/{block_count}...")
-        c_prev = iv if n == 0 else ciphertext_blocks[n - 1]
-
-        #########################################################
-        # Solve an individual block
-        #res = solve_block(submit, block_count, n, c_prev, c_i, block_size=block_size)
-        cprev_original = c_prev
-        ctarget = c_i
-        skip_trivial_original = True
-
-
-        assert len(cprev_original) == block_size and len(ctarget) == block_size
-        #stats = BlockStats()
-        last = block_size - 1
-
-        # Storage for intermediate bytes I_i (fill right->left)
-        I = [None] * block_size  # type: ignore
-
-        # We'll mutate a working copy of C_{i-1}
-        cprev_prime = bytearray(cprev_original)
-
         # Optional: observe whether the original pair is valid (not used for logic)
-        ok_orig = submit(cprev_original, ctarget)
+        ok_orig = submit(ciphertext_prime_n1, ciphertext_n)
         #stats.tries += 1
         # if ok_orig:
         #     #stats.positives += 1
@@ -166,30 +189,47 @@ def solve_message(
         #     #stats.negatives += 1
 
         # For k = 1..block_size
-        for k in range(1, block_size + 1):
+        for pad_length_k in range(1, block_size + 1):
             # 1) Program the already-solved tail bytes to decrypt as k
             #    tail indices: [block_size - (k-1), ..., block_size-1]
-            for j in range(block_size - (k - 1), block_size):
-                i_byte = I[j]
-                if i_byte is None:
+            for j in range(block_size - (pad_length_k - 1), block_size):
+                intermediate_i = intermediate_n[j]
+                if intermediate_i is None:
                     # not solved yet (will happen only at start of each k)
                     continue
-                cprev_prime[j] = i_byte ^ k
+                ciphertext_prime_n1[j] = intermediate_i ^ pad_length_k
 
             # 2) Brute-force the new target byte at i = block_size - k
-            i = block_size - k
-            original_at_i = cprev_original[i]
+            byte_index_i = block_size - pad_length_k
 
             found = False
-            for g in range(256):
+            for byte_value_g in range(256):
                 CURRENT_STEP += 1
 
                 # Skip trivial original only for k==1 (classic optimization)
-                if skip_trivial_original and k == 1 and g == original_at_i:
+                original_byte_value = ciphertext_prime_n1[byte_index_i]
+                if skip_trivial_original and pad_length_k == 1 and byte_value_g == original_byte_value:
                     continue
 
-                cprev_prime[i] = g
-                ok = submit(bytes(cprev_prime), ctarget)
+                ciphertext_prime_n1[byte_index_i] = byte_value_g
+
+                state_version += 1
+                snapshot = StateSnapshot(
+                    state_version=state_version,
+                    block_count=block_count,
+                    block_size=block_size,
+                    block_index_n=block_index_n,
+                    byte_index_i=byte_index_i,
+                    byte_value_g=byte_value_g,
+                    pad_length_k=pad_length_k,
+                    ciphertext=tuple(tuple(block) for block in ciphertext_blocks),
+                    ciphertext_prime=tuple(tuple(block) for block in ciphertext_prime_blocks),
+                    intermediate=intermediate_blocks,
+                    plaintext=plaintext_blocks,
+                )
+                state_queue.publish(snapshot)
+
+                ok = submit(bytes(ciphertext_prime_n1), ciphertext_n)
                 #stats.tries += 1
                 if not ok:
                     #stats.negatives += 1
@@ -197,12 +237,12 @@ def solve_message(
                     continue
 
                 # Positive: confirm by flipping a non-tail byte
-                confirmed, flip_idx = _confirm_hit(submit, cprev_prime, ctarget, k)
+                confirmed, flip_idx = _confirm_hit(submit, ciphertext_prime_n1, ciphertext_n, pad_length_k)
                 #stats.tries += (0 if flip_idx == -1 else 1)  # _confirm_hit already counted internally
                 if confirmed:
                     #stats.positives += 1 + (0 if flip_idx == -1 else 1)
                     #stats.confirmed_hits += 1
-                    I[i] = g ^ k
+                    intermediate_n[byte_index_i] = byte_value_g ^ pad_length_k
                     found = True
                     BYTES_FOUND += 1
                     COMPLETION_PERCENT = BYTES_FOUND / BYTES_TOTAL * 100
@@ -216,31 +256,14 @@ def solve_message(
                     continue
 
             if not found:
-                raise RuntimeError(f"No valid guess found at k={k} (i={i}); oracle not behaving like pure PKCS#7?")
+                raise RuntimeError(f"No valid guess found at k={pad_length_k} (i={byte_index_i}); oracle not behaving like pure PKCS#7?")
 
         # Build bytes
-        i_block = bytes(x for x in I)  # type: ignore
+        i_block = bytes(x for x in intermediate_n)  # type: ignore
         # Plaintext uses the **original** previous block (not the mutated one)
-        p_block = bytes((i_block[b] ^ cprev_original[b]) for b in range(block_size))
-
+        p_block = bytes((i_block[b] ^ ciphertext_prime_n1[b]) for b in range(block_size))
 
 
         #########################################################
         # After individual block solving
         #print(f"Block {n + 1}/{block_count} solved: {res.stats.tries} requests, {res.stats.confirmed_hits} confirmed hits") if res.stats else print(f"Block {n + 1}/{block_count} solved: no stats") # type: ignore
-
-
-def submit_http(prev_block: bytes, target_block: bytes) -> bool:
-    ciphertext = prev_block + target_block
-    ciphertext_b64 = b64_encode(ciphertext)
-    payload = {
-        "alg": "AES-128-CBC",
-        "ciphertext_b64": ciphertext_b64
-    }
-    try:
-        response = requests.post("http://127.0.0.1:8000/api/validate", json=payload, timeout=10)
-        time.sleep(0.01)  # Small delay to prevent overwhelming the server
-        return response.status_code == 200
-    except Exception as e:
-        print(f"Request failed: {e}")
-        return False

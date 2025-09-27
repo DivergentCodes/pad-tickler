@@ -22,25 +22,41 @@ def render(state: Optional[StateSnapshot]):
     # Create the UI table.
     ui_table = Table(title=f"Block {state.block_index_n} / {state.block_count - 1}  |  Byte {state.byte_index_i}  |  v{state.state_version}")
     ui_table.add_column("Block", justify="right")
-    ui_table.add_column("Ciphertext")
+    ui_table.add_column("Ciphertext Prime")
     ui_table.add_column("Intermediate")
     ui_table.add_column("Plaintext")
 
     block_count = len(state.ciphertext)
-    for block_n in range(block_count):
+    for block_idx in range(block_count):
 
         # Get the blocks from the state snapshot.
-        ciphertext_prime_block_n = state.ciphertext_prime[block_n]
-        intermediate_block_n = state.intermediate[block_n]
-        plaintext_block_n = state.plaintext[block_n]
+        ciphertext_prime_block = state.ciphertext_prime[block_idx]
+        intermediate_block = state.intermediate[block_idx]
+        plaintext_block = state.plaintext[block_idx]
 
         # Convert the blocks to displayable hex strings.
-        ciphertext_prime_string_n = block_to_string(ciphertext_prime_block_n)
-        intermediate_string_n = block_to_string(intermediate_block_n)
-        plaintext_string_n = block_to_string(plaintext_block_n)
+        ciphertext_prime_string = block_to_string(ciphertext_prime_block)
+        intermediate_string = block_to_string(intermediate_block)
+        plaintext_string = block_to_string(plaintext_block)
 
         # Add the blocks to the UI table.
-        ui_table.add_row(str(block_n), ciphertext_prime_string_n, intermediate_string_n, plaintext_string_n)
+        # Color the current row being worked on in red
+        if block_idx == state.block_index_n - 1:
+            ui_table.add_row(
+                f"{block_idx}",
+                f"[red]{ciphertext_prime_string}[/red]",
+                f"{intermediate_string}",
+                f"{plaintext_string}"
+            )
+        elif block_idx == state.block_index_n:
+            ui_table.add_row(
+                f"{block_idx}",
+                f"{ciphertext_prime_string}",
+                f"[cyan]{intermediate_string}[/cyan]",
+                f"[green]{plaintext_string}[/green]"
+            )
+        else:
+            ui_table.add_row(str(block_idx), ciphertext_prime_string, intermediate_string, plaintext_string)
 
     return ui_table
 

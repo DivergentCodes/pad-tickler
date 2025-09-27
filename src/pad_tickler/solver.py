@@ -257,9 +257,10 @@ def solve_message(
                 raise RuntimeError(f"No valid guess found at k={pad_length_k} (i={byte_index_i}); oracle not behaving like pure PKCS#7?")
 
         # Build bytes
-        i_block = bytes(x for x in intermediate_n)  # type: ignore
+        #i_block = bytes(x for x in intermediate_n)  # type: ignore
         # Plaintext uses the **original** previous block (not the mutated one)
-        p_block = bytes((i_block[b] ^ ciphertext_prime_n1[b]) for b in range(block_size))
+        plaintext_n = bytes((intermediate_n[b] ^ ciphertext_prime_n1[b]) for b in range(block_size))
+        plaintext_blocks[block_index_n] = plaintext_n
 
 
         #########################################################

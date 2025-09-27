@@ -7,8 +7,22 @@ from pad_tickler.state_queue import SingleSlotQueue
 from pad_tickler.state_snapshot import StateSnapshot
 
 
-def block_to_string(block: tuple) -> str:
-   return " ".join([ f"{b:02x}" if b is not None else "??" for b in block ])
+def block_to_string(block: tuple, highlight_byte_index: int = -1) -> str:
+   """Convert a block to hex string with optional byte highlighting."""
+   hex_bytes = []
+   for i, b in enumerate(block):
+       if b is not None:
+           hex_val = f"{b:02x}"
+           # Highlight the specific byte being worked on
+           if i == highlight_byte_index:
+               hex_val = f"[bold yellow on black]{hex_val}[/bold yellow on black]"
+           hex_bytes.append(hex_val)
+       else:
+           if i == highlight_byte_index:
+               hex_bytes.append("[bold yellow on black]??[/bold yellow on black]")
+           else:
+               hex_bytes.append("??")
+   return " ".join(hex_bytes)
 
 
 def render(state: Optional[StateSnapshot]):
@@ -34,10 +48,14 @@ def render(state: Optional[StateSnapshot]):
         intermediate_block = state.intermediate[block_idx]
         plaintext_block = state.plaintext[block_idx]
 
+        # Determine if we should highlight the current byte being worked on
+        current_byte_highlight = state.byte_index_i if block_idx == state.block_index_n else -1
+        prev_block_highlight = state.byte_index_i if block_idx == state.block_index_n - 1 else -1
+
         # Convert the blocks to displayable hex strings.
-        ciphertext_prime_string = block_to_string(ciphertext_prime_block)
-        intermediate_string = block_to_string(intermediate_block)
-        plaintext_string = block_to_string(plaintext_block)
+        ciphertext_prime_string = block_to_string(ciphertext_prime_block, prev_block_highlight)
+        intermediate_string = block_to_string(intermediate_block, current_byte_highlight)
+        plaintext_string = block_to_string(plaintext_block, current_byte_highlight)
 
         # Add the blocks to the UI table.
         # Color the current row being worked on in red

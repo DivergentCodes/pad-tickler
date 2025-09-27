@@ -7,8 +7,8 @@ from pad_tickler.state_queue import SingleSlotQueue
 from pad_tickler.state_snapshot import StateSnapshot
 
 
-def block_to_string(block: tuple, highlight_byte_index: int = -1) -> str:
-   """Convert a block to hex string with optional byte highlighting."""
+def block_to_string(block: tuple, highlight_byte_index: int = -1, block_color: str = "") -> str:
+   """Convert a block to hex string with optional byte highlighting and block coloring."""
    hex_bytes = []
    for i, b in enumerate(block):
        if b is not None:
@@ -22,7 +22,14 @@ def block_to_string(block: tuple, highlight_byte_index: int = -1) -> str:
                hex_bytes.append("[bold yellow on black]??[/bold yellow on black]")
            else:
                hex_bytes.append("??")
-   return " ".join(hex_bytes)
+
+   result = " ".join(hex_bytes)
+
+   # Apply block-level color if specified
+   if block_color:
+       result = f"[{block_color}]{result}[/{block_color}]"
+
+   return result
 
 
 def render(state: Optional[StateSnapshot]):
@@ -48,33 +55,25 @@ def render(state: Optional[StateSnapshot]):
         intermediate_block = state.intermediate[block_idx]
         plaintext_block = state.plaintext[block_idx]
 
-        # Determine if we should highlight the current byte being worked on
-        current_byte_highlight = state.byte_index_i if block_idx == state.block_index_n else -1
-        prev_block_highlight = state.byte_index_i if block_idx == state.block_index_n - 1 else -1
-
-        # Convert the blocks to displayable hex strings.
-        ciphertext_prime_string = block_to_string(ciphertext_prime_block, prev_block_highlight)
-        intermediate_string = block_to_string(intermediate_block, current_byte_highlight)
-        plaintext_string = block_to_string(plaintext_block, current_byte_highlight)
-
-        # Add the blocks to the UI table.
-        # Color the current row being worked on in red
+        # Determine highlighting and coloring based on which block is being worked on
         if block_idx == state.block_index_n - 1:
-            ui_table.add_row(
-                f"{block_idx}",
-                f"[red]{ciphertext_prime_string}[/red]",
-                f"{intermediate_string}",
-                f"{plaintext_string}"
-            )
+            # Previous block (ciphertext prime) - red with byte highlighting
+            ciphertext_prime_string = block_to_string(ciphertext_prime_block, state.byte_index_i, "red")
+            intermediate_string = block_to_string(intermediate_block)
+            plaintext_string = block_to_string(plaintext_block)
         elif block_idx == state.block_index_n:
-            ui_table.add_row(
-                f"{block_idx}",
-                f"{ciphertext_prime_string}",
-                f"[cyan]{intermediate_string}[/cyan]",
-                f"[green]{plaintext_string}[/green]"
-            )
+            # Current block being worked on - intermediate in cyan, plaintext in green, both with byte highlighting
+            ciphertext_prime_string = block_to_string(ciphertext_prime_block)
+            intermediate_string = block_to_string(intermediate_block, state.byte_index_i, "cyan")
+            plaintext_string = block_to_string(plaintext_block, state.byte_index_i, "green")
         else:
-            ui_table.add_row(str(block_idx), ciphertext_prime_string, intermediate_string, plaintext_string)
+            # Other blocks - no special coloring or highlighting
+            ciphertext_prime_string = block_to_string(ciphertext_prime_block)
+            intermediate_string = block_to_string(intermediate_block)
+            plaintext_string = block_to_string(plaintext_block)
+
+        # Add the blocks to the UI table (now without additional color wrapping)
+        ui_table.add_row(str(block_idx), ciphertext_prime_string, intermediate_string, plaintext_string)
 
     return ui_table
 

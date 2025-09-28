@@ -88,8 +88,8 @@ def solver():
     state_queue: SingleSlotQueue[StateSnapshot] = SingleSlotQueue()
     # In your real app, start your algorithm thread and call ch.publish(mutable.snapshot())
 
-    iv, ct = values1()
-    # iv, ct = values2()
+    #iv, ct = values1()
+    iv, ct = values2()
     # iv, ct = values3()
 
     ciphertext = iv + ct

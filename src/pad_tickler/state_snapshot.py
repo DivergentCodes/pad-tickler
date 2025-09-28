@@ -5,6 +5,7 @@ from typing import Tuple
 class StateSnapshot:
     """ Minimal immutable snapshot of solver state. """
     state_version: int
+    complete: bool
     block_count: int
     block_size: int
     block_index_n: int

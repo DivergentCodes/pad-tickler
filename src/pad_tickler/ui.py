@@ -56,12 +56,12 @@ def render(state: Optional[StateSnapshot]):
         plaintext_block = state.plaintext[block_idx]
 
         # Determine highlighting and coloring based on which block is being worked on
-        if block_idx == state.block_index_n - 1:
+        if block_idx == state.block_index_n - 1 and not state.complete:
             # Previous block (ciphertext prime) - red with byte highlighting
             ciphertext_prime_string = block_to_string(ciphertext_prime_block, state.byte_index_i, "red")
             intermediate_string = block_to_string(intermediate_block)
             plaintext_string = block_to_string(plaintext_block)
-        elif block_idx == state.block_index_n:
+        elif block_idx == state.block_index_n and not state.complete:
             # Current block being worked on - intermediate in cyan, plaintext in green, both with byte highlighting
             ciphertext_prime_string = block_to_string(ciphertext_prime_block)
             intermediate_string = block_to_string(intermediate_block, state.byte_index_i, "cyan")
@@ -72,8 +72,13 @@ def render(state: Optional[StateSnapshot]):
             intermediate_string = block_to_string(intermediate_block)
             plaintext_string = block_to_string(plaintext_block)
 
-        # Add the blocks to the UI table (now without additional color wrapping)
-        ui_table.add_row(str(block_idx), ciphertext_prime_string, intermediate_string, plaintext_string)
+        # Add the blocks to the UI table.
+        block_idx_string = str(block_idx)
+        if block_idx == 0:
+            block_idx_string = "IV"
+            intermediate_string = ""
+            plaintext_string = ""
+        ui_table.add_row(block_idx_string, ciphertext_prime_string, intermediate_string, plaintext_string)
 
     return ui_table
 

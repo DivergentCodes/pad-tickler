@@ -57,9 +57,9 @@ def render(state: Optional[StateSnapshot]):
     # Create the UI table.
     ui_table = Table(title=f"Block {state.block_index_n} / {state.block_count}  |  Byte {state.byte_index_i + 1}  |  v{state.state_version}")
     ui_table.add_column("Block", justify="right")
-    ui_table.add_column("Ciphertext Prime")
-    ui_table.add_column("Intermediate")
-    ui_table.add_column("Plaintext")
+    ui_table.add_column("Ciphertext Prime Cₙ₋₁′")
+    ui_table.add_column("Intermediate Iₙ")
+    ui_table.add_column("Plaintext Pₙ")
 
     block_count = len(state.ciphertext)
     for block_idx in range(block_count):

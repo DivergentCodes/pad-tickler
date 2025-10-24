@@ -51,6 +51,10 @@ tasks:
     cmds:
       - "uv pip install -e ."
 
+  solver:
+    cmds:
+      - uv run src/pad_tickler/main.py solver
+
   start-demo-api:
     cmds:
       - uv run python -m demo_api.main

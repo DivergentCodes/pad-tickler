@@ -25,7 +25,7 @@ def encrypt(plaintext_b64: str) -> str:
     return response.json()["ciphertext_b64"]
 
 
-def values1() -> tuple[bytes, bytes]:
+def demo_values1() -> tuple[bytes, bytes]:
     iv_hex = "2f818d406cf8f1ea5d22254273631ba1"
     ct_hex = "9ab1fe2c1eb7b586959bb646dee1686b"
     iv = bytes.fromhex(iv_hex)
@@ -33,7 +33,7 @@ def values1() -> tuple[bytes, bytes]:
     return iv, ct
 
 
-def values2() -> tuple[bytes, bytes]:
+def demo_values2() -> tuple[bytes, bytes]:
     ct_long3_b64 = "L4GNQGz48epdIiVCc2Mboflt7i8qi5spwF2Xvyl2tWuqWd9g3uSgl5gGmupYOjjihRV9o0A1Y5c0VRb/b/roDa9ic8EgnmN0GGhN5x8FrSte5fji98f1d25KfgWgSYoL"
     ct = b64_decode(ct_long3_b64)
     iv_hex = ct[:16].hex()
@@ -43,7 +43,7 @@ def values2() -> tuple[bytes, bytes]:
     return iv, ct
 
 
-def values3() -> tuple[bytes, bytes]:
+def demo_values3() -> tuple[bytes, bytes]:
     plaintext = """Bad stuff happens in the bathroom
 I'm just glad that it happens in a vacuum
 Can't let thеm see me with my pants down
@@ -88,9 +88,9 @@ def solver():
     state_queue: SingleSlotQueue[StateSnapshot] = SingleSlotQueue()
     # In your real app, start your algorithm thread and call ch.publish(mutable.snapshot())
 
-    #iv, ct = values1()
-    iv, ct = values2()
-    # iv, ct = values3()
+    #iv, ct = demo_values1()
+    iv, ct = demo_values2()
+    # iv, ct = demo_values3()
 
     ciphertext = iv + ct
 

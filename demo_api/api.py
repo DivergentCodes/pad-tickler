@@ -1,4 +1,3 @@
-import logging
 import traceback
 
 from fastapi import APIRouter, HTTPException

@@ -41,10 +41,10 @@ def b64_decode(
         b64_text += "=" * (4 - missing)
 
     try:
-        out = base64.b64decode(b64_text, validate=True)     # standard
+        out = base64.b64decode(b64_text, validate=True)
     except Exception:
-        out = base64.urlsafe_b64decode(b64_text)            # url-safe fallback
+        out = base64.urlsafe_b64decode(b64_text)  # URL-safe fallback
 
     if return_str:
-        return out.decode(text_encoding)  # may raise UnicodeDecodeError if not text
+        return out.decode(text_encoding)
     return out

@@ -36,3 +36,5 @@ def submit_guess(prev_block: bytes, target_block: bytes) -> bool:
 - `prev_block`: The ciphertext prime block before the target block `Cₙ₋₁′`.
 - `target_block`: The target ciphertext block.
 - `bool`: True if the padding guess worked, false if there was an error.
+
+A full demo guess function is in [demo_guess.py](src/pad_tickler/demo_guess.py).

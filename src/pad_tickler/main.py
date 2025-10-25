@@ -5,9 +5,9 @@ import requests
 
 from pad_tickler.state_queue import SingleSlotQueue
 from pad_tickler.state_snapshot import StateSnapshot
-from pad_tickler.solver import demo_producer, solve_message, submit_http
+from pad_tickler.solver import solve_message, submit_guess
 from pad_tickler.ui import ui_loop
-from pad_tickler.utils import b64_decode, b64_encode
+from pad_tickler.utils import b64_decode
 
 
 @click.group()
@@ -30,7 +30,7 @@ def solver(ciphertext: bytes):
     """Run the real padding oracle solver against a remote service."""
     # In the real app, start the algorithm thread and call ch.publish(mutable.snapshot())
     state_queue: SingleSlotQueue[StateSnapshot] = SingleSlotQueue()
-    t = threading.Thread(target=solve_message, args=(submit_http, state_queue, ciphertext), daemon=True)
+    t = threading.Thread(target=solve_message, args=(submit_guess, state_queue, ciphertext), daemon=True)
     t.start()
     try:
         ui_loop(state_queue)

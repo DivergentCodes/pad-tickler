@@ -44,6 +44,8 @@ def solve_message(
     """
     global MAX_POSSIBLE_STEPS, CURRENT_STEP, BYTES_FOUND, BYTES_TOTAL, COMPLETION_PERCENT
 
+    plaintext_result = None
+
     try:
         assert len(ciphertext) % block_size == 0, "ciphertext must be block-aligned"
 
@@ -182,6 +184,8 @@ def solve_message(
         )
         state_queue.publish(snapshot)
 
+        plaintext_result = plaintext_blocks
+
     except Exception as e:
         print(f"Error in solve_message: {e}")
         import traceback
@@ -189,3 +193,5 @@ def solve_message(
     finally:
         # Always close the queue so the UI can exit
         state_queue.close()
+
+    return plaintext_result

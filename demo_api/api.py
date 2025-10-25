@@ -41,19 +41,8 @@ def encrypt(plaintext: str) -> bytes:
     return ciphertext
 
 
-def build_response_from_ciphertext_hex(iv_hex: str, ct_hex: str) -> models.EncryptResponse:
-    """ Build a response with the given IV and ciphertext. """
-    iv = bytes.fromhex(iv_hex)
-    ct = bytes.fromhex(ct_hex)
-    return models.EncryptResponse(
-        alg=crypto.CipherSuite.AES_128_CBC.value,
-        ciphertext_b64=b64_encode(iv + ct),
-        ciphertext_hex=(iv + ct).hex(),
-    )
-
-
-def build_response_from_plaintext_str(plaintext: str) -> models.EncryptResponse:
-    """ Build a response with the given plaintext. """
+def build_encrypted_response(plaintext: str) -> models.EncryptResponse:
+    """ Build a response with the encrypted ciphertext of the given plaintext. """
     ct = encrypt(plaintext)
     return models.EncryptResponse(
         alg=crypto.CipherSuite.AES_128_CBC.value,
@@ -67,24 +56,22 @@ def demo1():
     """ Single block with static IV and ciphertext.
     """
     plaintext = "Hello, world!"
-    return build_response_from_plaintext_str(plaintext=plaintext)
+    return build_encrypted_response(plaintext=plaintext)
 
 
 @router.get("/demo2", response_model=models.EncryptResponse)
 def demo2():
     """ Base64 encoded ciphertext with 5 blocks and a static IV.
-    Plaintext:
-        0x61 * 16 ('aaaaaaaaaaaaaaaa')
-        0x62 * 16 ('bbbbbbbbbbbbbbbb')
-        0x63 * 16 ('cccccccccccccccc')
-        0x64 * 16 ('dddddddddddddddd')
-        0x65 * 16 ('eeeeeeeeeeeeeeee')
+    Each plaintext block is 16 bytes of the same character.
     """
-    ct_b64 = "L4GNQGz48epdIiVCc2Mboflt7i8qi5spwF2Xvyl2tWuqWd9g3uSgl5gGmupYOjjihRV9o0A1Y5c0VRb/b/roDa9ic8EgnmN0GGhN5x8FrSte5fji98f1d25KfgWgSYoL"
-    ct = b64_decode(ct_b64)
-    iv_hex = ct[:16].hex()
-    ct_hex = ct[16:].hex()
-    return build_response_from_ciphertext_hex(iv_hex, ct_hex)
+    plaintext = (
+        "aaaaaaaaaaaaaaaa"
+        "bbbbbbbbbbbbbbbb"
+        "cccccccccccccccc"
+        "dddddddddddddddd"
+        "eeeeeeeeeeeeeeee"
+    )
+    return build_encrypted_response(plaintext=plaintext)
 
 
 @router.get("/demo3", response_model=models.EncryptResponse)
@@ -107,17 +94,7 @@ No one's gonna blame me, I'll be doing just fine
 Today is gonna be a great day
 If Teddy can't unstick my dad, I'll find another way"""
 
-    return build_response_from_plaintext_str(plaintext=plaintext)
-
-    # pt_b64 = b64_encode(plaintext)
-    # ct_b64 = encrypt(pt_b64)
-    # ct = b64_decode(ct_b64)
-
-    # return models.EncryptResponse(
-    #     alg=crypto.CipherSuite.AES_128_CBC.value,
-    #     ciphertext_b64=ct_b64,
-    #     ciphertext_hex=ct.hex(),
-    # )
+    return build_encrypted_response(plaintext=plaintext)
 
 
 @router.post("/encrypt", response_model=models.EncryptResponse)

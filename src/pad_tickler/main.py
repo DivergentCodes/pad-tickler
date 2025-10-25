@@ -16,6 +16,7 @@ def cli():
 
 
 def encrypt(plaintext_b64: str) -> str:
+    """ Use the demo API to get ciphertext for the given plaintext. """
     payload = {
         "plaintext_b64": plaintext_b64
     }
@@ -23,51 +24,6 @@ def encrypt(plaintext_b64: str) -> str:
     if response.status_code != 200:
         raise ValueError(f"Failed to encrypt plaintext: {response.status_code} {response.text}")
     return response.json()["ciphertext_b64"]
-
-
-def demo_values1() -> tuple[bytes, bytes]:
-    iv_hex = "2f818d406cf8f1ea5d22254273631ba1"
-    ct_hex = "9ab1fe2c1eb7b586959bb646dee1686b"
-    iv = bytes.fromhex(iv_hex)
-    ct = bytes.fromhex(ct_hex)
-    return iv, ct
-
-
-def demo_values2() -> tuple[bytes, bytes]:
-    ct_long3_b64 = "L4GNQGz48epdIiVCc2Mboflt7i8qi5spwF2Xvyl2tWuqWd9g3uSgl5gGmupYOjjihRV9o0A1Y5c0VRb/b/roDa9ic8EgnmN0GGhN5x8FrSte5fji98f1d25KfgWgSYoL"
-    ct = b64_decode(ct_long3_b64)
-    iv_hex = ct[:16].hex()
-    ct_hex = ct[16:].hex()
-
-    iv = bytes.fromhex(iv_hex)
-    ct = bytes.fromhex(ct_hex)
-    return iv, ct
-
-
-def demo_values3() -> tuple[bytes, bytes]:
-    plaintext = """Bad stuff happens in the bathroom
-I'm just glad that it happens in a vacuum
-Can't let thеm see me with my pants down
-Coasters magazine is gonna bе my big chance now
-But I'll be outta here in no time
-I'll be doing interviews and feelin' just fine
-Today is gonna be a great day
-I'll do Coasters magazine and blow everyone away
-Let's be clear
-I did absolutely nothing wrong, I'm not to blame, it's not my fault
-This is just to say
-If Gene had pooped like every day, this would have all just blown away
-But he'll be out of there in no time
-No one's gonna blame me, I'll be doing just fine
-Today is gonna be a great day
-If Teddy can't unstick my dad, I'll find another way"""
-
-    pt_b64 = b64_encode(plaintext)
-    ct_b64 = encrypt(pt_b64)
-    ct = b64_decode(ct_b64)
-    iv = ct[:16]
-    ct = ct[16:]
-    return iv, ct
 
 
 def solver(ciphertext: bytes):

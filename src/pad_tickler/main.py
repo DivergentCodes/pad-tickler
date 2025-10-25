@@ -8,7 +8,8 @@ from pad_tickler.state_queue import SingleSlotQueue
 from pad_tickler.state_snapshot import StateSnapshot
 from pad_tickler.solver import solve_message
 from pad_tickler.ui import ui_loop
-from pad_tickler.utils import b64_decode, SubmitGuessFn
+from pad_tickler.utils import b64_decode, load_ciphertext, load_guess_fn, \
+    CiphertextFormat, SubmitGuessFn
 
 
 @click.group()
@@ -56,6 +57,16 @@ def demo3():
     ciphertext = fetch_demo_data("http://127.0.0.1:8000/api/demo3")
     solver(demo_submit_guess, ciphertext)
 
+
+@cli.command()
+@click.option("--ciphertext-path", "-c", required=True, type=click.Path(exists=True))
+@click.option("--ciphertext-format", "-f", type=click.Choice(["b64", "b64_urlsafe", "hex", "raw"]), default="b64")
+@click.option("--guess-fn", "-g", required=True, type=click.Path(exists=True))
+def solve(ciphertext_path: str, ciphertext_format: CiphertextFormat, guess_fn: str):
+    """Solve a given ciphertext with a user defined guess function."""
+    ciphertext = load_ciphertext(ciphertext_path, ciphertext_format)
+    submit_guess_fn = load_guess_fn(guess_fn)
+    solver(submit_guess_fn, ciphertext)
 
 if __name__ == "__main__":
     cli()

@@ -2,11 +2,18 @@ import base64
 import importlib.util
 import inspect
 import types
-from typing import Callable, Union
+from typing import Callable, Union, Literal
 
 SubmitGuessFn = Callable[[bytes, bytes], bool]
 
 PLUGIN_FUNC_NAME = "submit_guess"
+
+type CiphertextFormat = Union[Literal[
+    "b64",
+    "b64_urlsafe",
+    "hex",
+    "raw"
+], str]
 
 class PluginLoadError(RuntimeError):
     pass
@@ -45,6 +52,21 @@ def load_guess_fn(module_file_path: str) -> Callable[[bytes, bytes], bool]:
         )
     return fn
 
+
+def load_ciphertext(file_path: str, format: CiphertextFormat) -> bytes:
+    """Load the ciphertext from a file."""
+    with open(file_path, "rb") as f:
+        data = f.read()
+    if format == "b64":
+        return b64_decode(data)
+    elif format == "b64_urlsafe":
+        return b64_decode(data, urlsafe=True)
+    elif format == "hex":
+        return bytes.fromhex(data.decode("utf-8"))
+    elif format == "raw":
+        return data
+    else:
+        raise ValueError(f"Invalid ciphertext format: {format}")
 
 
 def _as_bytes(

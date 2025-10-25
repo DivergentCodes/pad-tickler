@@ -14,7 +14,6 @@ def _as_bytes(
         return bytes(data)
     if isinstance(data, str):
         return data.encode(encoding)
-    raise TypeError(f"Unsupported type: {type(data)!r}")
 
 def b64_encode(
     data: Union[str, bytes, bytearray, memoryview],

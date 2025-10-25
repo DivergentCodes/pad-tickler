@@ -38,6 +38,7 @@ def demo_values2() -> tuple[bytes, bytes]:
     ct = b64_decode(ct_long3_b64)
     iv_hex = ct[:16].hex()
     ct_hex = ct[16:].hex()
+
     iv = bytes.fromhex(iv_hex)
     ct = bytes.fromhex(ct_hex)
     return iv, ct
@@ -69,37 +70,46 @@ If Teddy can't unstick my dad, I'll find another way"""
     return iv, ct
 
 
-@cli.command()
-def demo():
-    """Run the demo with simulated padding oracle attack."""
-    state_queue: SingleSlotQueue[StateSnapshot] = SingleSlotQueue()
-    # In your real app, start your algorithm thread and call ch.publish(mutable.snapshot())
-    t = threading.Thread(target=demo_producer, args=(state_queue,), daemon=True)
-    t.start()
-    try:
-        ui_loop(state_queue)
-    except KeyboardInterrupt:
-        state_queue.close()
-
-
-@cli.command()
-def solver():
+def solver(ciphertext: bytes):
     """Run the real padding oracle solver against a remote service."""
+    # In the real app, start the algorithm thread and call ch.publish(mutable.snapshot())
     state_queue: SingleSlotQueue[StateSnapshot] = SingleSlotQueue()
-    # In your real app, start your algorithm thread and call ch.publish(mutable.snapshot())
-
-    #iv, ct = demo_values1()
-    iv, ct = demo_values2()
-    # iv, ct = demo_values3()
-
-    ciphertext = iv + ct
-
     t = threading.Thread(target=solve_message, args=(submit_http, state_queue, ciphertext), daemon=True)
     t.start()
     try:
         ui_loop(state_queue)
     except KeyboardInterrupt:
         state_queue.close()
+
+
+def fetch_demo_data(endpoint: str) -> bytes:
+    """ Fetch the demo data from the given test endpoint. """
+    response = requests.get(endpoint)
+    if response.status_code != 200:
+        raise ValueError(f"Failed to get {endpoint}: {response.status_code} {response.text}")
+    data = response.json()
+    return b64_decode(data["ciphertext_b64"])
+
+
+@cli.command()
+def demo1():
+    """Run with data from the demo1 endpoint."""
+    ciphertext = fetch_demo_data("http://127.0.0.1:8000/api/demo1")
+    solver(ciphertext)
+
+
+@cli.command()
+def demo2():
+    """Run with data from the demo2 endpoint."""
+    ciphertext = fetch_demo_data("http://127.0.0.1:8000/api/demo2")
+    solver(ciphertext)
+
+
+@cli.command()
+def demo3():
+    """Run with data from the demo3 endpoint."""
+    ciphertext = fetch_demo_data("http://127.0.0.1:8000/api/demo3")
+    solver(ciphertext)
 
 
 if __name__ == "__main__":

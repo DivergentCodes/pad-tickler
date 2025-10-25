@@ -17,31 +17,116 @@ log.info("logger initialized")
 router = APIRouter()
 
 
+def encrypt(plaintext: str) -> bytes:
+    plaintext = plaintext.encode("utf-8")
+    cipher = crypto.CipherSuite.AES_128_CBC.value
+    key = crypto.get_key(cipher)
+    iv = crypto.get_iv(cipher, random=False)
+
+    ciphertext = crypto.encrypt(cipher, key, iv, plaintext)
+    log.info(
+        "encrypted",
+        cipher=cipher,
+        plaintext=plaintext,
+        plaintext_hex=plaintext.hex(" "),
+
+        key_hex=key.hex(),
+        iv_hex=iv.hex(),
+        ciphertext_hex=ciphertext.hex(" "),
+
+        key_len=len(key),
+        iv_len=len(iv),
+        ciphertext_len=len(ciphertext),
+    )
+    return ciphertext
+
+
+def build_response_from_ciphertext_hex(iv_hex: str, ct_hex: str) -> models.EncryptResponse:
+    """ Build a response with the given IV and ciphertext. """
+    iv = bytes.fromhex(iv_hex)
+    ct = bytes.fromhex(ct_hex)
+    return models.EncryptResponse(
+        alg=crypto.CipherSuite.AES_128_CBC.value,
+        ciphertext_b64=b64_encode(iv + ct),
+        ciphertext_hex=(iv + ct).hex(),
+    )
+
+
+def build_response_from_plaintext_str(plaintext: str) -> models.EncryptResponse:
+    """ Build a response with the given plaintext. """
+    ct = encrypt(plaintext)
+    return models.EncryptResponse(
+        alg=crypto.CipherSuite.AES_128_CBC.value,
+        ciphertext_b64=b64_encode(ct),
+        ciphertext_hex=ct.hex(),
+    )
+
+
+@router.get("/demo1", response_model=models.EncryptResponse)
+def demo1():
+    """ Single block with static IV and ciphertext.
+    """
+    plaintext = "Hello, world!"
+    return build_response_from_plaintext_str(plaintext=plaintext)
+
+
+@router.get("/demo2", response_model=models.EncryptResponse)
+def demo2():
+    """ Base64 encoded ciphertext with 5 blocks and a static IV.
+    Plaintext:
+        0x61 * 16 ('aaaaaaaaaaaaaaaa')
+        0x62 * 16 ('bbbbbbbbbbbbbbbb')
+        0x63 * 16 ('cccccccccccccccc')
+        0x64 * 16 ('dddddddddddddddd')
+        0x65 * 16 ('eeeeeeeeeeeeeeee')
+    """
+    ct_b64 = "L4GNQGz48epdIiVCc2Mboflt7i8qi5spwF2Xvyl2tWuqWd9g3uSgl5gGmupYOjjihRV9o0A1Y5c0VRb/b/roDa9ic8EgnmN0GGhN5x8FrSte5fji98f1d25KfgWgSYoL"
+    ct = b64_decode(ct_b64)
+    iv_hex = ct[:16].hex()
+    ct_hex = ct[16:].hex()
+    return build_response_from_ciphertext_hex(iv_hex, ct_hex)
+
+
+@router.get("/demo3", response_model=models.EncryptResponse)
+def demo3():
+    """ Longer Base64 encoded ciphertext with a static IV. """
+    plaintext = """Bad stuff happens in the bathroom
+I'm just glad that it happens in a vacuum
+Can't let thеm see me with my pants down
+Coasters magazine is gonna bе my big chance now
+But I'll be outta here in no time
+I'll be doing interviews and feelin' just fine
+Today is gonna be a great day
+I'll do Coasters magazine and blow everyone away
+Let's be clear
+I did absolutely nothing wrong, I'm not to blame, it's not my fault
+This is just to say
+If Gene had pooped like every day, this would have all just blown away
+But he'll be out of there in no time
+No one's gonna blame me, I'll be doing just fine
+Today is gonna be a great day
+If Teddy can't unstick my dad, I'll find another way"""
+
+    return build_response_from_plaintext_str(plaintext=plaintext)
+
+    # pt_b64 = b64_encode(plaintext)
+    # ct_b64 = encrypt(pt_b64)
+    # ct = b64_decode(ct_b64)
+
+    # return models.EncryptResponse(
+    #     alg=crypto.CipherSuite.AES_128_CBC.value,
+    #     ciphertext_b64=ct_b64,
+    #     ciphertext_hex=ct.hex(),
+    # )
+
+
 @router.post("/encrypt", response_model=models.EncryptResponse)
-def encrypt(req: models.EncryptRequest):
+def encrypt_api(req: models.EncryptRequest):
+    """ Encrypt the given plaintext and return the ciphertext. """
     try:
         plaintext = b64_decode(req.plaintext_b64)
-
+        ciphertext = encrypt(plaintext)
         cipher = crypto.CipherSuite.AES_128_CBC.value
-        key = crypto.get_key(cipher)
-        iv = crypto.get_iv(cipher, random=False)
-
-        ciphertext = crypto.encrypt(cipher, key, iv, plaintext)
-        log.info(
-            "encrypted",
-            cipher=cipher,
-            plaintext=plaintext,
-            plaintext_hex=plaintext.hex(" "),
-
-            key_hex=key.hex(),
-            iv_hex=iv.hex(),
-            ciphertext_hex=ciphertext.hex(" "),
-
-            key_len=len(key),
-            iv_len=len(iv),
-            ciphertext_len=len(ciphertext),
-        )
-
         return models.EncryptResponse(
             alg=cipher,
             ciphertext_b64=b64_encode(ciphertext),
@@ -54,6 +139,9 @@ def encrypt(req: models.EncryptRequest):
 
 @router.post("/validate", response_model=models.ValidateResponse)
 def validate(req: models.ValidateRequest):
+    """ Validate the given ciphertext and return the plaintext.
+    This is the endpoint that is vulnerable to the padding oracle attack.
+    """
     cipher = crypto.CipherSuite.AES_128_CBC.value
     key = crypto.get_key(cipher)
 

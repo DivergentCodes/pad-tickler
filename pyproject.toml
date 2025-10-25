@@ -1,0 +1,29 @@
+[project]
+name = "padtickler"
+version = "0.1.0"
+description = "Padding oracle CLI"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "cryptography>=45.0.6",
+    "requests>=2.32.5",
+    "rich>=14.1.0",
+    "structlog>=25.4.0",
+    "click>=8.1.0",
+]
+
+[project.scripts]
+padtickler = "pad_tickler.__main__:main"
+
+[dependency-groups]
+dev = [
+    "go-task-bin>=3.44.1",
+    "pytest>=8.4.1",
+]
+
+demo = [
+    "fastapi[standard]>=0.116.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

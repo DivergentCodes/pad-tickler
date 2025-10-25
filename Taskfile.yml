@@ -1,0 +1,54 @@
+# https://taskfile.dev
+
+version: "3"
+
+vars:
+  ALG: "AES-128-CBC"
+  PLAINTEXT: "Hello, world!"
+  CIPHERTEXT_B64: "L4GNQGz48epdIiVCc2MboZqx/iwet7WGlZu2Rt7haGs="
+
+tasks:
+  default:
+    cmds:
+      - "uv run python -m pad_tickler"
+
+  install:
+    cmds:
+      - "uv pip install -e ."
+
+  demo1:
+    cmds:
+      - uv run src/pad_tickler/main.py demo1
+
+  demo2:
+    cmds:
+      - uv run src/pad_tickler/main.py demo2
+
+  demo3:
+    cmds:
+      - uv run src/pad_tickler/main.py demo3
+
+  start-demo-api:
+    cmds:
+      - uv run python -m demo_api.main
+
+  demo-encrypt:
+    cmds:
+      - 'curl -s -X POST http://localhost:8000/api/encrypt -H "Content-Type: application/json" -d "{\"plaintext\": \"{{.PLAINTEXT}}\"}" | jq'
+
+  demo-validate:
+    cmds:
+      - 'curl -s -X POST http://localhost:8000/api/validate -H "Content-Type: application/json" -d "{\"alg\": \"{{.ALG}}\", \"ciphertext_b64\": \"{{.CIPHERTEXT_B64}}\"}" | jq'
+
+  test:
+    cmds:
+      - "uv run pytest"
+
+  clean:
+    cmds:
+      - "rm -rf __pycache__"
+      - "rm -rf demo_api/__pycache__"
+      - "rm -rf pad_tickler/__pycache__"
+      - "rm -rf .pytest_cache"
+      - "rm -rf .ruff_cache"
+      - "rm -rf .venv"

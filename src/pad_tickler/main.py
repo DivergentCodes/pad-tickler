@@ -9,7 +9,7 @@ from pad_tickler.state_snapshot import StateSnapshot
 from pad_tickler.solver import solve_message
 from pad_tickler.ui import ui_loop
 from pad_tickler.utils import b64_decode, load_ciphertext, load_guess_fn, \
-    CiphertextFormat, SubmitGuessFn
+    CiphertextFormat, SubmitGuessFn, bytestring_from_list_of_blocks, strip_plaintext_padding
 
 
 @click.group()
@@ -30,6 +30,8 @@ def solver(submit_guess: SubmitGuessFn, ciphertext: bytes):
             state_queue.close()
 
         plaintext = future.result()
+        plaintext = bytestring_from_list_of_blocks(plaintext)
+        plaintext = strip_plaintext_padding(plaintext)
         return plaintext
 
 

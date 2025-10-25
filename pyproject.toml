@@ -19,6 +19,7 @@ padtickler = "pad_tickler.__main__:main"
 dev = [
     "go-task-bin>=3.44.1",
     "pytest>=8.4.1",
+    "ruff>=0.14.2",
 ]
 
 demo = [

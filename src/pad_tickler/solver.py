@@ -1,10 +1,8 @@
-from typing import Callable, Tuple
+from typing import Tuple
 
 from pad_tickler.state_snapshot import StateSnapshot
 from pad_tickler.state_queue import SingleSlotQueue
-
-
-SubmitFn = Callable[[bytes, bytes], bool]
+from pad_tickler.utils import SubmitGuessFn
 
 MAX_POSSIBLE_STEPS = 0
 CURRENT_STEP = 0
@@ -13,7 +11,7 @@ BYTES_TOTAL = 0
 COMPLETION_PERCENT = 0.00
 
 
-def confirm_guess(submit: SubmitFn, c_prev_prime: bytearray, c_target_block: bytes, pad_k: int) -> Tuple[bool, int]:
+def confirm_guess(submit: SubmitGuessFn, c_prev_prime: bytearray, c_target_block: bytes, pad_k: int) -> Tuple[bool, int]:
     """
     Flip a byte **outside** the last k bytes (i.e., index < 16 - k) and re-submit.
     If still valid, treat as a confirmed padding hit for this k.
@@ -32,7 +30,7 @@ def confirm_guess(submit: SubmitFn, c_prev_prime: bytearray, c_target_block: byt
 
 
 def solve_message(
-    submit: SubmitFn,
+    submit: SubmitGuessFn,
     state_queue: SingleSlotQueue[StateSnapshot],
     ciphertext: bytes,
     *,

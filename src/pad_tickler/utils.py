@@ -99,7 +99,7 @@ def strip_plaintext_padding(plaintext: bytes) -> bytes:
         return plaintext
 
     tail_value = plaintext[-1]
-    if tail_value < 16:
+    if tail_value <= 16:
         return plaintext.rstrip(bytes([tail_value]))
 
     return plaintext

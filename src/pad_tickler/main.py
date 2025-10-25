@@ -9,7 +9,8 @@ from pad_tickler.state_snapshot import StateSnapshot
 from pad_tickler.solver import solve_message
 from pad_tickler.ui import ui_loop
 from pad_tickler.utils import b64_decode, load_ciphertext, load_guess_fn, \
-    CiphertextFormat, SubmitGuessFn, bytestring_from_list_of_blocks, strip_plaintext_padding
+    bytestring_from_list_of_blocks, strip_plaintext_padding, \
+    CiphertextFormat, SubmitGuessFn
 
 
 @click.group()

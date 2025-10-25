@@ -23,3 +23,16 @@ Running against a target in local development requires supplying a Python module
 ```sh
 uv run python src/pad_tickler/main.py solve -g my_guess.py -c ciphertext.hex -f hex
 ```
+
+## User-Defined Guess Function
+
+To support arbitrary padding oracle targets, users define their own
+`submit_guess` function with the following signature:
+
+```py
+def submit_guess(prev_block: bytes, target_block: bytes) -> bool:
+```
+
+- `prev_block`: The ciphertext prime block before the target block `Cₙ₋₁′`.
+- `target_block`: The target ciphertext block.
+- `bool`: True if the padding guess worked, false if there was an error.

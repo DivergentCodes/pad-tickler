@@ -7,18 +7,27 @@ from pad_tickler.state_queue import SingleSlotQueue
 from pad_tickler.state_snapshot import StateSnapshot
 
 
-current_byte_color = "bold yellow on black"
-ciphertext_unsolved_color = "dark_red"
-ciphertext_solved_color = "bright_red"
-intermediate_unsolved_color = "cyan"
-intermediate_solved_color = "turquoise2"
-plaintext_unsolved_color = "green"
-plaintext_solved_color = "spring_green2"
+COLORS = {
+    "current_byte": "bold yellow on black",
+    "ciphertext": {
+        "unsolved": "dark_red",
+        "solved": "bright_red",
+    },
+    "intermediate": {
+        "unsolved": "cyan",
+        "solved": "turquoise2",
+    },
+    "plaintext": {
+        "unsolved": "green",
+        "solved": "spring_green2",
+    },
+}
 
+type BlockType = Literal["ciphertext", "intermediate", "plaintext"]
 type BlockState = Literal["unsolved", "solved", "current", "previous", "other"]
 
 
-def block_to_string(block: tuple, block_state: BlockState, unsolved_color: str, solved_color: str, current_byte_index: int = -1) -> str:
+def block_to_string(block: tuple, block_type: BlockType, block_state: BlockState, current_byte_index: int = -1) -> str:
     """Convert a block to hex string and apply coloring."""
     result = ""
 
@@ -28,18 +37,18 @@ def block_to_string(block: tuple, block_state: BlockState, unsolved_color: str, 
         hex_bytes = []
         for i, b in enumerate(normalized_block):
             if i < current_byte_index:
-                b = f"[{unsolved_color}]{b}[/{unsolved_color}]"
+                b = f"[{COLORS[block_type]['unsolved']}]{b}[/{COLORS[block_type]['unsolved']}]"
             if i > current_byte_index:
-                b = f"[{solved_color}]{b}[/{solved_color}]"
+                b = f"[{COLORS[block_type]['solved']}]{b}[/{COLORS[block_type]['solved']}]"
             else:
-                b = f"[{current_byte_color}]{b}[/{current_byte_color}]"
+                b = f"[{COLORS['current_byte']}]{b}[/{COLORS['current_byte']}]"
             hex_bytes.append(b)
 
         result = " ".join(hex_bytes)
     elif block_state == "solved":
-        result = " ".join(f"[{solved_color}]{hex_val}[/{solved_color}]" for hex_val in normalized_block)
+        result = " ".join(f"[{COLORS[block_type]['solved']}]{hex_val}[/{COLORS[block_type]['solved']}]" for hex_val in normalized_block)
     elif block_state == "unsolved":
-        result = " ".join(f"[{unsolved_color}]{hex_val}[/{unsolved_color}]" for hex_val in normalized_block)
+        result = " ".join(f"[{COLORS[block_type]['unsolved']}]{hex_val}[/{COLORS[block_type]['unsolved']}]" for hex_val in normalized_block)
     else:
         raise ValueError(f"Invalid block state: {block_state}")
 
@@ -47,7 +56,7 @@ def block_to_string(block: tuple, block_state: BlockState, unsolved_color: str, 
 
 
 def render(state: Optional[StateSnapshot]):
-    """Render the solver state."""
+    """Render the solver state snapshot."""
     if state is None:
         return Panel("Waiting for first update…", title="Padding Oracle", border_style="dim")
 
@@ -69,27 +78,29 @@ def render(state: Optional[StateSnapshot]):
         intermediate_block = state.intermediate[block_idx]
         plaintext_block = state.plaintext[block_idx]
 
+        current_byte_index = state.byte_index_i
+
         # Determine highlighting and coloring based on which block is being worked on
         if block_idx == state.block_index_n - 1 and not state.complete:
-            # Previous block (ciphertext prime) - red with byte highlighting
-            ciphertext_prime_string = block_to_string(ciphertext_prime_block, "current", ciphertext_unsolved_color, ciphertext_solved_color, state.byte_index_i)
-            intermediate_string = block_to_string(intermediate_block, "solved", intermediate_unsolved_color, intermediate_solved_color)
-            plaintext_string = block_to_string(plaintext_block, "solved", plaintext_unsolved_color, plaintext_solved_color)
+            # Previous block (ciphertext prime)
+            ciphertext_prime_string = block_to_string(ciphertext_prime_block, "ciphertext",   "current", current_byte_index)
+            intermediate_string     = block_to_string(intermediate_block,     "intermediate", "solved")
+            plaintext_string        = block_to_string(plaintext_block,        "plaintext",    "solved")
         elif block_idx == state.block_index_n and not state.complete:
-            # Current block being worked on - intermediate in cyan, plaintext in green, both with byte highlighting
-            ciphertext_prime_string = block_to_string(ciphertext_prime_block, "unsolved", ciphertext_unsolved_color, ciphertext_solved_color)
-            intermediate_string = block_to_string(intermediate_block, "current", intermediate_unsolved_color, intermediate_solved_color, state.byte_index_i)
-            plaintext_string = block_to_string(plaintext_block, "current", plaintext_unsolved_color, plaintext_solved_color, state.byte_index_i)
+            # Current block being worked on
+            ciphertext_prime_string = block_to_string(ciphertext_prime_block, "ciphertext",   "unsolved")
+            intermediate_string     = block_to_string(intermediate_block,     "intermediate", "current", current_byte_index)
+            plaintext_string        = block_to_string(plaintext_block,        "plaintext",    "current", current_byte_index)
         elif block_idx < state.block_index_n and not state.complete:
-            # Previous blocks - intermediate in cyan, plaintext in green, both with byte highlighting
-            ciphertext_prime_string = block_to_string(ciphertext_prime_block, "solved", ciphertext_unsolved_color, ciphertext_solved_color)
-            intermediate_string = block_to_string(intermediate_block, "solved", intermediate_unsolved_color, intermediate_solved_color)
-            plaintext_string = block_to_string(plaintext_block, "solved", plaintext_unsolved_color, plaintext_solved_color)
+            # Previous blocks
+            ciphertext_prime_string = block_to_string(ciphertext_prime_block, "ciphertext",   "solved")
+            intermediate_string     = block_to_string(intermediate_block,     "intermediate", "solved")
+            plaintext_string        = block_to_string(plaintext_block,        "plaintext",    "solved")
         else:
             # Other blocks after the current block being worked on
-            ciphertext_prime_string = block_to_string(ciphertext_prime_block, "unsolved", ciphertext_unsolved_color, ciphertext_solved_color)
-            intermediate_string = block_to_string(intermediate_block, "unsolved", intermediate_unsolved_color, intermediate_solved_color)
-            plaintext_string = block_to_string(plaintext_block, "unsolved", plaintext_unsolved_color, plaintext_solved_color)
+            ciphertext_prime_string = block_to_string(ciphertext_prime_block, "ciphertext",   "unsolved")
+            intermediate_string     = block_to_string(intermediate_block,     "intermediate", "unsolved")
+            plaintext_string        = block_to_string(plaintext_block,        "plaintext",    "unsolved")
 
         # Add the blocks to the UI table.
         block_idx_string = str(block_idx)
@@ -101,11 +112,12 @@ def render(state: Optional[StateSnapshot]):
 
     return ui_table
 
+
 def ui_loop(state_queue: SingleSlotQueue[StateSnapshot]) -> None:
     """Loop the UI."""
     with Live(render(None), refresh_per_second=30, screen=False) as live:
         while True:
-            state = state_queue.get()        # blocks; returns None when closed
+            state = state_queue.get()
             if state is None:
                 break
             live.update(render(state))

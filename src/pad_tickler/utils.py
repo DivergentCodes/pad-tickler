@@ -1,5 +1,50 @@
 import base64
-from typing import Union
+import importlib.util
+import inspect
+import types
+from typing import Callable, Union
+
+SubmitGuessFn = Callable[[bytes, bytes], bool]
+
+PLUGIN_FUNC_NAME = "submit_guess"
+
+class PluginLoadError(RuntimeError):
+    pass
+
+class PluginSignatureError(TypeError):
+    pass
+
+
+def load_module_from_file(module_file_path: str) -> types.ModuleType:
+    """Load a Python module file."""
+    spec = importlib.util.spec_from_file_location("guess_fn", module_file_path)
+    if spec is None or spec.loader is None:
+        raise PluginLoadError(f"Could not load spec for: {module_file_path}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)  # executes user code
+    return mod
+
+
+def load_guess_fn(module_file_path: str) -> Callable[[bytes, bytes], bool]:
+    """Load the user defined guess function from a Python module file."""
+    mod = load_module_from_file(module_file_path)
+    fn = getattr(mod, PLUGIN_FUNC_NAME, None)
+    if fn is None:
+        raise PluginLoadError(
+            f"Plugin must define `{PLUGIN_FUNC_NAME}(prev_block: bytes, target_block: bytes) -> bool`"
+        )
+
+    sig = inspect.signature(fn)
+    params = list(sig.parameters.values())
+    if len(params) != 2 or any(
+        p.kind not in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        for p in params
+    ):
+        raise PluginSignatureError(
+            "submit_guess must accept exactly two positional args: (prev_block: bytes, target_block: bytes)"
+        )
+    return fn
+
 
 
 def _as_bytes(

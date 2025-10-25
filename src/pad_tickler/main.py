@@ -1,13 +1,14 @@
 import threading
+import time
 
 import click
 import requests
 
 from pad_tickler.state_queue import SingleSlotQueue
 from pad_tickler.state_snapshot import StateSnapshot
-from pad_tickler.solver import solve_message, submit_guess
+from pad_tickler.solver import solve_message
 from pad_tickler.ui import ui_loop
-from pad_tickler.utils import b64_decode
+from pad_tickler.utils import b64_decode, b64_encode
 
 
 @click.group()
@@ -15,20 +16,25 @@ def cli():
     pass
 
 
-def encrypt(plaintext_b64: str) -> str:
-    """ Use the demo API to get ciphertext for the given plaintext. """
+def submit_guess(prev_block: bytes, target_block: bytes) -> bool:
+    """ Submit a padding guess to the oracle (demo API) to validate the given ciphertext. """
+    ciphertext = prev_block + target_block
+    ciphertext_b64 = b64_encode(ciphertext)
     payload = {
-        "plaintext_b64": plaintext_b64
+        "alg": "AES-128-CBC",
+        "ciphertext_b64": ciphertext_b64
     }
-    response = requests.post("http://127.0.0.1:8000/api/encrypt", json=payload)
-    if response.status_code != 200:
-        raise ValueError(f"Failed to encrypt plaintext: {response.status_code} {response.text}")
-    return response.json()["ciphertext_b64"]
+    try:
+        response = requests.post("http://127.0.0.1:8000/api/validate", json=payload, timeout=10)
+        time.sleep(0.01)  # Small delay to prevent overwhelming the server
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Request failed: {e}")
+        return False
 
 
 def solver(ciphertext: bytes):
     """Run the real padding oracle solver against a remote service."""
-    # In the real app, start the algorithm thread and call ch.publish(mutable.snapshot())
     state_queue: SingleSlotQueue[StateSnapshot] = SingleSlotQueue()
     t = threading.Thread(target=solve_message, args=(submit_guess, state_queue, ciphertext), daemon=True)
     t.start()

@@ -17,23 +17,6 @@ BYTES_TOTAL = 0
 COMPLETION_PERCENT = 0.00
 
 
-def submit_guess(prev_block: bytes, target_block: bytes) -> bool:
-    """ Submit a padding guess to the oracle (demo API) to validate the given ciphertext. """
-    ciphertext = prev_block + target_block
-    ciphertext_b64 = b64_encode(ciphertext)
-    payload = {
-        "alg": "AES-128-CBC",
-        "ciphertext_b64": ciphertext_b64
-    }
-    try:
-        response = requests.post("http://127.0.0.1:8000/api/validate", json=payload, timeout=10)
-        time.sleep(0.01)  # Small delay to prevent overwhelming the server
-        return response.status_code == 200
-    except Exception as e:
-        print(f"Request failed: {e}")
-        return False
-
-
 def _confirm_hit(submit: SubmitFn, cprev_prime: bytearray, ctarget: bytes, k: int) -> Tuple[bool, int]:
     """
     Flip a byte **outside** the last k bytes (i.e., index < 16 - k) and re-submit.

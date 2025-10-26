@@ -79,7 +79,10 @@ def solve(ciphertext_path: str, ciphertext_format: CiphertextFormat, guess_fn: s
     ciphertext = load_ciphertext(ciphertext_path, ciphertext_format)
     submit_guess_fn = load_guess_fn(guess_fn)
     plaintext = solver(submit_guess_fn, ciphertext)
-    print(plaintext)
+    plaintext_path = f"{ciphertext_path}.plaintext"
+
+    with open(plaintext_path, "wb") as f:
+        f.write(plaintext)
 
 if __name__ == "__main__":
     cli()

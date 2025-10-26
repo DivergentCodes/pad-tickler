@@ -1,4 +1,4 @@
-import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import click
 import requests
@@ -9,6 +9,7 @@ from pad_tickler.state_snapshot import StateSnapshot
 from pad_tickler.solver import solve_message
 from pad_tickler.ui import ui_loop
 from pad_tickler.utils import b64_decode, load_ciphertext, load_guess_fn, \
+    bytestring_from_list_of_blocks, strip_plaintext_padding, \
     CiphertextFormat, SubmitGuessFn
 
 
@@ -20,12 +21,19 @@ def cli():
 def solver(submit_guess: SubmitGuessFn, ciphertext: bytes):
     """Run the real padding oracle solver against a remote service."""
     state_queue: SingleSlotQueue[StateSnapshot] = SingleSlotQueue()
-    t = threading.Thread(target=solve_message, args=(submit_guess, state_queue, ciphertext), daemon=True)
-    t.start()
-    try:
-        ui_loop(state_queue)
-    except KeyboardInterrupt:
-        state_queue.close()
+
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(solve_message, submit_guess, state_queue, ciphertext)
+
+        try:
+            ui_loop(state_queue)
+        except KeyboardInterrupt:
+            state_queue.close()
+
+        plaintext = future.result()
+        plaintext = bytestring_from_list_of_blocks(plaintext)
+        plaintext = strip_plaintext_padding(plaintext)
+        return plaintext
 
 
 def fetch_demo_data(endpoint: str) -> bytes:
@@ -41,21 +49,25 @@ def fetch_demo_data(endpoint: str) -> bytes:
 def demo1():
     """Run with data from the demo1 endpoint."""
     ciphertext = fetch_demo_data("http://127.0.0.1:8000/api/demo1")
-    solver(demo_submit_guess, ciphertext)
+    plaintext = solver(demo_submit_guess, ciphertext)
+    print(plaintext)
+    #breakpoint()
 
 
 @cli.command()
 def demo2():
     """Run with data from the demo2 endpoint."""
     ciphertext = fetch_demo_data("http://127.0.0.1:8000/api/demo2")
-    solver(demo_submit_guess, ciphertext)
+    plaintext = solver(demo_submit_guess, ciphertext)
+    print(plaintext)
 
 
 @cli.command()
 def demo3():
     """Run with data from the demo3 endpoint."""
     ciphertext = fetch_demo_data("http://127.0.0.1:8000/api/demo3")
-    solver(demo_submit_guess, ciphertext)
+    plaintext = solver(demo_submit_guess, ciphertext)
+    print(plaintext)
 
 
 @cli.command()
@@ -66,7 +78,8 @@ def solve(ciphertext_path: str, ciphertext_format: CiphertextFormat, guess_fn: s
     """Solve a given ciphertext with a user defined guess function."""
     ciphertext = load_ciphertext(ciphertext_path, ciphertext_format)
     submit_guess_fn = load_guess_fn(guess_fn)
-    solver(submit_guess_fn, ciphertext)
+    plaintext = solver(submit_guess_fn, ciphertext)
+    print(plaintext)
 
 if __name__ == "__main__":
     cli()

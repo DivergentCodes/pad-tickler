@@ -2,7 +2,7 @@ import base64
 import importlib.util
 import inspect
 import types
-from typing import Callable, Union, Literal
+from typing import Callable, Union, Literal, List
 
 SubmitGuessFn = Callable[[bytes, bytes], bool]
 
@@ -81,6 +81,28 @@ def _as_bytes(
         return bytes(data)
     if isinstance(data, str):
         return data.encode(encoding)
+
+def bytestring_from_list_of_blocks(blocks: List[List[bytes]]) -> bytes:
+    # Convert list of lists to bytes
+    if blocks:
+        all_bytes = []
+        for byte_list in blocks:
+            if byte_list is not None:  # Skip None blocks (like IV)
+                all_bytes.extend([b for b in byte_list if b is not None])
+        blocks_bytes = bytes(all_bytes)
+        return blocks_bytes
+
+
+def strip_plaintext_padding(plaintext: bytes) -> bytes:
+    """ Strip the padding from the plaintext. """
+    if not plaintext:
+        return plaintext
+
+    tail_value = plaintext[-1]
+    if tail_value <= 16:
+        return plaintext.rstrip(bytes([tail_value]))
+
+    return plaintext
 
 def b64_encode(
     data: Union[str, bytes, bytearray, memoryview],

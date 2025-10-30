@@ -15,6 +15,7 @@ def _as_bytes(
     if isinstance(data, str):
         return data.encode(encoding)
 
+
 def b64_encode(
     data: Union[str, bytes, bytearray, memoryview],
     *,
@@ -25,6 +26,7 @@ def b64_encode(
     raw = _as_bytes(data, encoding=text_encoding)
     fn = base64.urlsafe_b64encode if urlsafe else base64.b64encode
     return fn(raw).decode("ascii")
+
 
 def b64_decode(
     b64_text: str,
@@ -39,9 +41,9 @@ def b64_decode(
         b64_text += "=" * (4 - missing)
 
     try:
-        out = base64.b64decode(b64_text, validate=True)     # standard
+        out = base64.b64decode(b64_text, validate=True)  # standard
     except Exception:
-        out = base64.urlsafe_b64decode(b64_text)            # url-safe fallback
+        out = base64.urlsafe_b64decode(b64_text)  # url-safe fallback
 
     if return_str:
         return out.decode(text_encoding)  # may raise UnicodeDecodeError if not text

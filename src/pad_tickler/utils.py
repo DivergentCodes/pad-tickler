@@ -8,15 +8,12 @@ SubmitGuessFn = Callable[[bytes, bytes], bool]
 
 PLUGIN_FUNC_NAME = "submit_guess"
 
-type CiphertextFormat = Union[Literal[
-    "b64",
-    "b64_urlsafe",
-    "hex",
-    "raw"
-], str]
+type CiphertextFormat = Union[Literal["b64", "b64_urlsafe", "hex", "raw"], str]
+
 
 class PluginLoadError(RuntimeError):
     pass
+
 
 class PluginSignatureError(TypeError):
     pass
@@ -44,7 +41,11 @@ def load_guess_fn(module_file_path: str) -> Callable[[bytes, bytes], bool]:
     sig = inspect.signature(fn)
     params = list(sig.parameters.values())
     if len(params) != 2 or any(
-        p.kind not in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        p.kind
+        not in (
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        )
         for p in params
     ):
         raise PluginSignatureError(
@@ -82,6 +83,7 @@ def _as_bytes(
     if isinstance(data, str):
         return data.encode(encoding)
 
+
 def bytestring_from_list_of_blocks(blocks: List[List[bytes]]) -> bytes:
     # Convert list of lists to bytes
     if blocks:
@@ -94,7 +96,7 @@ def bytestring_from_list_of_blocks(blocks: List[List[bytes]]) -> bytes:
 
 
 def strip_plaintext_padding(plaintext: bytes) -> bytes:
-    """ Strip the padding from the plaintext. """
+    """Strip the padding from the plaintext."""
     if not plaintext:
         return plaintext
 
@@ -103,6 +105,7 @@ def strip_plaintext_padding(plaintext: bytes) -> bytes:
         return plaintext.rstrip(bytes([tail_value]))
 
     return plaintext
+
 
 def b64_encode(
     data: Union[str, bytes, bytearray, memoryview],
@@ -114,6 +117,7 @@ def b64_encode(
     raw = _as_bytes(data, encoding=text_encoding)
     fn = base64.urlsafe_b64encode if urlsafe else base64.b64encode
     return fn(raw).decode("ascii")
+
 
 def b64_decode(
     b64_text: str,

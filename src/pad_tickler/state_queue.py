@@ -4,8 +4,10 @@ import threading
 
 T = TypeVar("T")
 
+
 class SingleSlotQueue(Generic[T]):
     """Thread-safe, size=1, latest-wins queue. Consumers read the latest item."""
+
     def __init__(self) -> None:
         self._condition = threading.Condition()
         self._has_value = False
@@ -28,7 +30,9 @@ class SingleSlotQueue(Generic[T]):
     def get(self, timeout: Optional[float] = None) -> Optional[T]:
         """Blocks until a value is available or the queue is closed. Returns None on close."""
         with self._condition:
-            ok = self._condition.wait_for(lambda: self._has_value or self._closed, timeout)
+            ok = self._condition.wait_for(
+                lambda: self._has_value or self._closed, timeout
+            )
             if not ok:
                 raise TimeoutError("queue get() timed out")
             if self._closed and not self._has_value:

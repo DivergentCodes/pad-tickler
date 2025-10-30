@@ -49,7 +49,7 @@ jobs:
           root_options: "-vv"
 
   publish-test:
- .  # https://packaging.python.org/guides/using-testpypi/
+    # https://packaging.python.org/guides/using-testpypi/
     name: Publish to Test PyPI
     needs: release
     if: needs.release.outputs.released == 'true'

@@ -39,8 +39,7 @@ jobs:
           uv pip install -e .
 
       - name: Build package
-        run: |
-          uv build
+        run: task build
 
       - name: Semantic Release
         id: release
@@ -50,6 +49,8 @@ jobs:
           root_options: "-vv"
 
   publish-test:
+ .  # https://packaging.python.org/guides/using-testpypi/
+    name: Publish to Test PyPI
     needs: release
     if: needs.release.outputs.released == 'true'
     runs-on: ubuntu-latest
@@ -76,7 +77,8 @@ jobs:
         run: |
           uv build
 
-      - name: Publish to PyPI
+      - name: Publish to Test PyPI
         uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
         with:
+          repository-url: https://test.pypi.org/legacy/
           attestations: true

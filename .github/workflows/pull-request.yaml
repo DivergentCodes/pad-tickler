@@ -23,7 +23,9 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: task install
+        run: |
+          uv sync --group dev --group demo
+          uv pip install -e .
 
       - name: Run linting
         run: task lint

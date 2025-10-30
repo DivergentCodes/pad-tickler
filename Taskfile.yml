@@ -14,11 +14,13 @@ tasks:
 
   install:
     cmds:
-      - "scripts/install.sh"
+      - uv sync --group dev --group demo
+      - uv pip install -e .
 
   lint:
     cmds:
-      - "scripts/lint.sh"
+      - uv run ruff check .
+      - uv run ruff format --check .
 
   demo-api:
     cmds:
@@ -44,6 +46,18 @@ tasks:
     cmds:
       - 'curl -s -X POST http://localhost:8000/api/validate -H "Content-Type: application/json" -d "{\"alg\": \"{{.ALG}}\", \"ciphertext_b64\": \"{{.CIPHERTEXT_B64}}\"}" | jq'
 
+  build:
+    cmds:
+      - uv build
+
+  release-dry-run:
+    cmds:
+      - uv run semantic-release version --dry-run
+
+  release-local:
+    cmds:
+      - uv run semantic-release version
+
   clean:
     cmds:
       - "rm -rf __pycache__"
@@ -52,3 +66,5 @@ tasks:
       - "rm -rf .pytest_cache"
       - "rm -rf .ruff_cache"
       - "rm -rf .venv"
+      - "rm -rf dist/"
+      - "rm -rf *.egg-info/"

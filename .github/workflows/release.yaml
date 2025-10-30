@@ -46,7 +46,8 @@ jobs:
         uses: python-semantic-release/python-semantic-release@4d4cb0ab842247caea1963132c242c62aab1e4d5 # v10.4.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          root_options: "-vv"
+          verbosity: 2
+          build: false
 
   publish-test:
     # https://packaging.python.org/guides/using-testpypi/

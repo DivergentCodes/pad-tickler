@@ -43,6 +43,8 @@ version_variables = ["src/pad_tickler/__init__.py:__version__"]
 build_command = "uv build"
 dist_path = "dist/"
 upload_to_vcs_release = true
+major_on_zero = true
+tag_format = "v{version}"
 
 [tool.semantic_release.branches.main]
 match = "(main|master)"
@@ -50,7 +52,6 @@ prerelease_token = "rc"
 prerelease = false
 
 [tool.semantic_release.changelog]
-template_dir = "templates"
 changelog_file = "CHANGELOG.md"
 exclude_commit_patterns = [
   "^Merge pull request",
@@ -64,5 +65,6 @@ allowed_tags = ["build", "chore", "ci", "docs", "feat", "fix", "perf", "style", 
 minor_tags = ["feat"]
 patch_tags = ["fix", "perf"]
 
-[tool.semantic_release.remote.token]
-env = "GITHUB_TOKEN"
+[tool.semantic_release.remote]
+type = "github"
+token = { env = "GITHUB_TOKEN" }

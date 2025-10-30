@@ -1,9 +1,11 @@
-name: Release
+name: Release Test
 
 on:
   push:
     branches:
       - main
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 permissions:
@@ -12,12 +14,12 @@ permissions:
   pull-requests: write
 
 jobs:
-  release:
+  release-test:
     runs-on: ubuntu-latest
     outputs:
-      released: ${{ steps.release.outputs.released }}
-      version: ${{ steps.release.outputs.version }}
-      tag: ${{ steps.release.outputs.tag }}
+      released: ${{ steps.release-test.outputs.released }}
+      version: ${{ steps.release-test.outputs.version }}
+      tag: ${{ steps.release-test.outputs.tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,7 +45,7 @@ jobs:
         run: uv run task build
 
       - name: Semantic Release
-        id: release
+        id: release-test
         uses: python-semantic-release/python-semantic-release@4d4cb0ab842247caea1963132c242c62aab1e4d5 # v10.4.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -55,8 +57,8 @@ jobs:
   publish-test:
     # https://packaging.python.org/guides/using-testpypi/
     name: Publish to Test PyPI
-    needs: release
-    if: needs.release.outputs.released == 'true'
+    needs: release-test
+    if: needs.release-test.outputs.released == 'true' && github.event_name != 'merge_group'
     runs-on: ubuntu-latest
     environment:
       name: publish-test
@@ -65,7 +67,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          ref: ${{ needs.release.outputs.tag }}
+          ref: ${{ needs.release-test.outputs.tag }}
 
       - name: Python setup
         uses: actions/setup-python@v6

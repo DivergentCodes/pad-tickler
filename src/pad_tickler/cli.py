@@ -98,5 +98,36 @@ def solve(ciphertext_path: str, ciphertext_format: CiphertextFormat, guess_fn: s
         f.write(plaintext)
 
 
+@cli.command("demo-api")
+@click.option("--host", default="127.0.0.1", help="Host to bind the server to")
+@click.option("--port", default=8000, help="Port to bind the server to")
+@click.option("--reload", is_flag=True, help="Enable auto-reload for development")
+def demo_api(host: str, port: int, reload: bool):
+    """Start the demo API server for testing padding oracle attacks."""
+    try:
+        import uvicorn
+        from demo_api.api import app
+    except ImportError as e:
+        click.echo(f"Error: Demo API dependencies not available: {e}")
+        click.echo("Install with: uv sync --group demo")
+        raise click.Abort()
+
+    click.echo(f"Starting demo API server on http://{host}:{port}")
+    click.echo("Available endpoints:")
+    click.echo("  - GET  /api/demo1  - Single block demo")
+    click.echo("  - GET  /api/demo2  - Multi-block demo")
+    click.echo("  - GET  /api/demo3  - Long text demo")
+    click.echo("  - POST /api/encrypt - Encrypt plaintext")
+    click.echo("  - POST /api/validate - Validate ciphertext (padding oracle)")
+    click.echo("\nPress Ctrl+C to stop the server")
+
+    if reload:
+        # Use import string for reload mode
+        uvicorn.run("demo_api.api:app", host=host, port=port, reload=True)
+    else:
+        # Use app object for non-reload mode (faster startup)
+        uvicorn.run(app, host=host, port=port, reload=False)
+
+
 if __name__ == "__main__":
     cli()

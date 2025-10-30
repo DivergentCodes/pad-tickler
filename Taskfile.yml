@@ -24,7 +24,7 @@ tasks:
 
   demo-api:
     cmds:
-      - uv run padtickler-demo-api
+      - uv run padtickler demo-api --reload
 
   demo1:
     cmds:
@@ -57,6 +57,10 @@ tasks:
   release-local:
     cmds:
       - uv run semantic-release version
+
+  install:test-pypi:
+    cmds:
+      - pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ padtickler
 
   clean:
     cmds:

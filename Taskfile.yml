@@ -16,6 +16,10 @@ tasks:
     cmds:
       - "scripts/install.sh"
 
+  install-all:
+    cmds:
+      - "scripts/install.sh all"
+
   lint:
     cmds:
       - "scripts/lint.sh"

@@ -2,5 +2,5 @@
 
 set -euo pipefail
 
-uv sync
+uv sync --group dev --group demo
 uv pip install -e .

@@ -11,17 +11,17 @@ There are several demos to show how the tool (and padding oracles) work.
 Running the demos locally.
 
 ```sh
-uv sync
-uv run python -m demo_api.main &
-uv run python src/pad_tickler/main.py demo1
-uv run python src/pad_tickler/main.py demo2
-uv run python src/pad_tickler/main.py demo3
+./scripts/install.sh
+uv run padtickler-demo-api &
+uv run padtickler demo1
+uv run padtickler demo2
+uv run padtickler demo3
 ```
 
 Running against a target in local development requires supplying a Python module with your `submit_guess` function and a ciphertext file as binary, base64, URL-safe base64, or hex data.
 
 ```sh
-uv run python src/pad_tickler/main.py solve -g my_guess.py -c ciphertext.hex -f hex
+uv run padtickler solve -g my_guess.py -c ciphertext.hex -f hex
 ```
 
 ## User-Defined Guess Function

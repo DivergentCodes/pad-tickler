@@ -1,6 +1,6 @@
 import traceback
 
-from fastapi import APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException
 import structlog
 
 from . import crypto, models
@@ -13,6 +13,10 @@ log = structlog.get_logger(
 )
 log.info("logger initialized")
 
+# Create the FastAPI app
+app = FastAPI(title="Padding Oracle Demo API")
+
+# Create the router for API endpoints
 router = APIRouter()
 
 
@@ -158,3 +162,7 @@ def validate(req: models.ValidateRequest):
         else:
             traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"{e}")
+
+
+# Include the router in the app (after all routes are defined)
+app.include_router(router, prefix="/api")

@@ -14,6 +14,7 @@ dependencies = [
 
 [project.scripts]
 padtickler = "pad_tickler.__main__:main"
+padtickler-demo-api = "demo_api.__main__:main"
 
 [dependency-groups]
 dev = [

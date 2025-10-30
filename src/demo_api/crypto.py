@@ -12,6 +12,7 @@ log = structlog.get_logger()
 KEY_DIR = pathlib.Path(__file__).parent / "keys"
 KEY_DIR.mkdir(parents=True, exist_ok=True)
 
+
 class CipherSuite(str, Enum):
     AES_128_CBC = "AES-128-CBC"
     AES_128_ECB = "AES-128-ECB"
@@ -100,7 +101,7 @@ def get_iv(algorithm: CipherSuite, random: bool = True) -> bytes:
 
 
 def encrypt(algorithm: CipherSuite, key: bytes, iv: bytes, plaintext: bytes) -> bytes:
-    """ Encrypts the plaintext using the given algorithm and key.
+    """Encrypts the plaintext using the given algorithm and key.
     If the algorithm is CBC, it uses the given IV.
     If the algorithm is ECB, it does not use an IV.
     """
@@ -149,7 +150,7 @@ def encrypt(algorithm: CipherSuite, key: bytes, iv: bytes, plaintext: bytes) -> 
 
 
 def decrypt(algorithm: CipherSuite, key: bytes, ciphertext: bytes) -> bytes:
-    """ Decrypts the ciphertext using the given algorithm and key.
+    """Decrypts the ciphertext using the given algorithm and key.
     If the algorithm is CBC, it uses the given IV.
     If the algorithm is ECB, it does not use an IV.
     """

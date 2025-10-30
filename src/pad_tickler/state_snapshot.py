@@ -1,9 +1,11 @@
 from dataclasses import dataclass, field
 from typing import Tuple
 
+
 @dataclass(frozen=True, slots=True)
 class StateSnapshot:
-    """ Minimal immutable snapshot of solver state. """
+    """Minimal immutable snapshot of solver state."""
+
     state_version: int
     complete: bool
     block_count: int

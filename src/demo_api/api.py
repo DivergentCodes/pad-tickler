@@ -32,11 +32,9 @@ def encrypt(plaintext: str) -> bytes:
         cipher=cipher,
         plaintext=plaintext,
         plaintext_hex=plaintext.hex(" "),
-
         key_hex=key.hex(),
         iv_hex=iv.hex(),
         ciphertext_hex=ciphertext.hex(" "),
-
         key_len=len(key),
         iv_len=len(iv),
         ciphertext_len=len(ciphertext),
@@ -45,7 +43,7 @@ def encrypt(plaintext: str) -> bytes:
 
 
 def build_encrypted_response(plaintext: str) -> models.EncryptResponse:
-    """ Build a response with the encrypted ciphertext of the given plaintext. """
+    """Build a response with the encrypted ciphertext of the given plaintext."""
     ct = encrypt(plaintext)
     return models.EncryptResponse(
         alg=crypto.CipherSuite.AES_128_CBC.value,
@@ -56,15 +54,14 @@ def build_encrypted_response(plaintext: str) -> models.EncryptResponse:
 
 @router.get("/demo1", response_model=models.EncryptResponse)
 def demo1():
-    """ Single block with static IV and ciphertext.
-    """
+    """Single block with static IV and ciphertext."""
     plaintext = "Hello, world!"
     return build_encrypted_response(plaintext=plaintext)
 
 
 @router.get("/demo2", response_model=models.EncryptResponse)
 def demo2():
-    """ Base64 encoded ciphertext with 5 blocks and a static IV.
+    """Base64 encoded ciphertext with 5 blocks and a static IV.
     Each plaintext block is 16 bytes of the same character.
     """
     plaintext = (
@@ -79,7 +76,7 @@ def demo2():
 
 @router.get("/demo3", response_model=models.EncryptResponse)
 def demo3():
-    """ Longer Base64 encoded ciphertext with a static IV. """
+    """Longer Base64 encoded ciphertext with a static IV."""
     plaintext = """Bad stuff happens in the bathroom
 I'm just glad that it happens in a vacuum
 Can't let thеm see me with my pants down
@@ -102,7 +99,7 @@ If Teddy can't unstick my dad, I'll find another way"""
 
 @router.post("/encrypt", response_model=models.EncryptResponse)
 def encrypt_api(req: models.EncryptRequest):
-    """ Encrypt the given plaintext and return the ciphertext. """
+    """Encrypt the given plaintext and return the ciphertext."""
     try:
         plaintext = b64_decode(req.plaintext_b64)
         ciphertext = encrypt(plaintext)
@@ -119,7 +116,7 @@ def encrypt_api(req: models.EncryptRequest):
 
 @router.post("/validate", response_model=models.ValidateResponse)
 def validate(req: models.ValidateRequest):
-    """ Validate the given ciphertext and return the plaintext.
+    """Validate the given ciphertext and return the plaintext.
     This is the endpoint that is vulnerable to the padding oracle attack.
     """
     cipher = crypto.CipherSuite.AES_128_CBC.value
@@ -129,7 +126,9 @@ def validate(req: models.ValidateRequest):
     ciphertext = b64_decode(ciphertext_b64)
 
     if len(ciphertext) < 32:
-        raise HTTPException(status_code=400, detail="Ciphertext must be at least 32 bytes long")
+        raise HTTPException(
+            status_code=400, detail="Ciphertext must be at least 32 bytes long"
+        )
 
     ciphertext_n = ciphertext[-16:]
     ciphertext_n_1 = ciphertext[-32:-16]
@@ -138,10 +137,8 @@ def validate(req: models.ValidateRequest):
         log.info(
             "decrypting",
             cipher=cipher,
-
             key_hex=key.hex(),
             ciphertext_hex=ciphertext.hex(),
-
             key_len=len(key),
             ciphertext_len=len(ciphertext),
         )
@@ -158,7 +155,11 @@ def validate(req: models.ValidateRequest):
         )
     except Exception as e:
         if "Invalid padding bytes" in str(e):
-            log.warn("invalid padding bytes", ciphertext_n=ciphertext_n.hex(), ciphertext_n_1=ciphertext_n_1.hex())
+            log.warn(
+                "invalid padding bytes",
+                ciphertext_n=ciphertext_n.hex(),
+                ciphertext_n_1=ciphertext_n_1.hex(),
+            )
         else:
             traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"{e}")

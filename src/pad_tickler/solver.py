@@ -11,14 +11,16 @@ BYTES_TOTAL = 0
 COMPLETION_PERCENT = 0.00
 
 
-def confirm_guess(submit: SubmitGuessFn, c_prev_prime: bytearray, c_target_block: bytes, pad_k: int) -> Tuple[bool, int]:
+def confirm_guess(
+    submit: SubmitGuessFn, c_prev_prime: bytearray, c_target_block: bytes, pad_k: int
+) -> Tuple[bool, int]:
     """
     Flip a byte **outside** the last k bytes (i.e., index < 16 - k) and re-submit.
     If still valid, treat as a confirmed padding hit for this k.
     Returns (confirmed, flipped_idx).
     """
     block_size = len(c_target_block)
-    flipped_idx = (block_size - pad_k - 1)
+    flipped_idx = block_size - pad_k - 1
     if flipped_idx < 0:
         # Accept as confirmed when no non-tail byte to flip (like at k == block_size).
         return True, -1
@@ -42,7 +44,12 @@ def solve_message(
     - ciphertext: N*16 bytes
     Returns plaintext, intermediates per block, and per-block stats.
     """
-    global MAX_POSSIBLE_STEPS, CURRENT_STEP, BYTES_FOUND, BYTES_TOTAL, COMPLETION_PERCENT
+    global \
+        MAX_POSSIBLE_STEPS, \
+        CURRENT_STEP, \
+        BYTES_FOUND, \
+        BYTES_TOTAL, \
+        COMPLETION_PERCENT
 
     plaintext_result = None
 
@@ -50,13 +57,20 @@ def solve_message(
         assert len(ciphertext) % block_size == 0, "ciphertext must be block-aligned"
 
         # Break the ciphertext into blocks.
-        ciphertext_blocks = [ciphertext[i:i + block_size] for i in range(0, len(ciphertext), block_size)]
+        ciphertext_blocks = [
+            ciphertext[i : i + block_size]
+            for i in range(0, len(ciphertext), block_size)
+        ]
         block_count = len(ciphertext_blocks)
 
         # Initialize other sets of blocks.
         ciphertext_prime_blocks = [bytearray(block) for block in ciphertext_blocks]
-        intermediate_blocks = [[None for _ in range(block_size)] for _ in range(block_count)]
-        plaintext_blocks = [[None for _ in range(block_size)] for _ in range(block_count)]
+        intermediate_blocks = [
+            [None for _ in range(block_size)] for _ in range(block_count)
+        ]
+        plaintext_blocks = [
+            [None for _ in range(block_size)] for _ in range(block_count)
+        ]
 
         BYTES_TOTAL = len(ciphertext) - block_size  # Don't count IV bytes
         MAX_POSSIBLE_STEPS = 256 * block_size * (block_count - 1)  # Don't count IV
@@ -71,15 +85,20 @@ def solve_message(
 
             # The previous block for decryption (IV for first block, previous ciphertext for others)
             ciphertext_prime_n1 = ciphertext_prime_blocks[block_index_n - 1]
-            assert len(ciphertext_prime_n1) == block_size and len(ciphertext_n) == block_size
+            assert (
+                len(ciphertext_prime_n1) == block_size
+                and len(ciphertext_n) == block_size
+            )
 
             # Storage for intermediate bytes I_i (fill right->left)
             intermediate_n = intermediate_blocks[block_index_n]
 
             # Create a new snapshot of the state.
-            intermediate_i = block_size - 1 # Start from the last byte position in the block.
-            byte_value_g = 0 # Start with byte value 0.
-            pad_length_k = 1 # Start with padding length 1.
+            intermediate_i = (
+                block_size - 1
+            )  # Start from the last byte position in the block.
+            byte_value_g = 0  # Start with byte value 0.
+            pad_length_k = 1  # Start with padding length 1.
 
             state_version += 1
             snapshot = StateSnapshot(
@@ -92,7 +111,9 @@ def solve_message(
                 byte_value_g=byte_value_g,
                 pad_length_k=pad_length_k,
                 ciphertext=tuple(tuple(block) for block in ciphertext_blocks),
-                ciphertext_prime=tuple(tuple(block) for block in ciphertext_prime_blocks),
+                ciphertext_prime=tuple(
+                    tuple(block) for block in ciphertext_prime_blocks
+                ),
                 intermediate=intermediate_blocks,
                 plaintext=plaintext_blocks,
             )
@@ -118,7 +139,11 @@ def solve_message(
 
                     # Skip trivial original only for k==1
                     original_byte_value = ciphertext_prime_n1[byte_index_i]
-                    if skip_trivial_original and pad_length_k == 1 and byte_value_g == original_byte_value:
+                    if (
+                        skip_trivial_original
+                        and pad_length_k == 1
+                        and byte_value_g == original_byte_value
+                    ):
                         continue
 
                     ciphertext_prime_n1[byte_index_i] = byte_value_g
@@ -127,14 +152,17 @@ def solve_message(
                     snapshot = StateSnapshot(
                         state_version=state_version,
                         complete=False,
-                        block_count=block_count - 1,  # Don't count IV as a block to decrypt
+                        block_count=block_count
+                        - 1,  # Don't count IV as a block to decrypt
                         block_size=block_size,
                         block_index_n=block_index_n,  # Already 1-based from enumerate start=1
                         byte_index_i=byte_index_i,
                         byte_value_g=byte_value_g,
                         pad_length_k=pad_length_k,
                         ciphertext=tuple(tuple(block) for block in ciphertext_blocks),
-                        ciphertext_prime=tuple(tuple(block) for block in ciphertext_prime_blocks),
+                        ciphertext_prime=tuple(
+                            tuple(block) for block in ciphertext_prime_blocks
+                        ),
                         intermediate=intermediate_blocks,
                         plaintext=plaintext_blocks,
                     )
@@ -146,14 +174,18 @@ def solve_message(
                         continue
 
                     # Confirm guess validity by flipping a non-tail byte.
-                    confirmed, _ = confirm_guess(submit, ciphertext_prime_n1, ciphertext_n, pad_length_k)
+                    confirmed, _ = confirm_guess(
+                        submit, ciphertext_prime_n1, ciphertext_n, pad_length_k
+                    )
                     if confirmed:
                         # Save the discovered intermediate byte.
                         intermediate_n[byte_index_i] = byte_value_g ^ pad_length_k
                         prev_block = ciphertext_blocks[block_index_n - 1]
 
                         # For CBC mode, plaintext = previous_ciphertext_block XOR intermediate
-                        plaintext_blocks[block_index_n][byte_index_i] = prev_block[byte_index_i] ^ intermediate_n[byte_index_i]
+                        plaintext_blocks[block_index_n][byte_index_i] = (
+                            prev_block[byte_index_i] ^ intermediate_n[byte_index_i]
+                        )
 
                         found = True
                         BYTES_FOUND += 1
@@ -164,7 +196,9 @@ def solve_message(
                         continue
 
                 if not found:
-                    raise RuntimeError(f"No valid guess found at k={pad_length_k} (i={byte_index_i}); oracle not behaving like pure PKCS#7?")
+                    raise RuntimeError(
+                        f"No valid guess found at k={pad_length_k} (i={byte_index_i}); oracle not behaving like pure PKCS#7?"
+                    )
 
         # Final state snapshot.
         state_version += 1
@@ -189,6 +223,7 @@ def solve_message(
     except Exception as e:
         print(f"Error in solve_message: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         # Always close the queue so the UI can exit

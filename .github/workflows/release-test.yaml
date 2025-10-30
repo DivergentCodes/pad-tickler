@@ -66,8 +66,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-        with:
-          ref: ${{ needs.release-test.outputs.tag }}
 
       - name: Python setup
         uses: actions/setup-python@v6

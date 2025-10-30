@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
   id-token: write
+  pull-requests: write
 
 jobs:
   release:
@@ -48,6 +49,8 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           verbosity: 2
           build: false
+          commit: false
+          push: false
 
   publish-test:
     # https://packaging.python.org/guides/using-testpypi/

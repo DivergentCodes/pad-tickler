@@ -8,14 +8,19 @@ There are several demos to show how the tool (and padding oracles) work.
 
 ## Usage
 
-Running the demos locally.
+### Installation
+
+```
+pip install padtickler
+```
+
+### Demos
 
 ```sh
-./scripts/install.sh
-uv run padtickler-demo-api &
-uv run padtickler demo1
-uv run padtickler demo2
-uv run padtickler demo3
+padtickler demo-api &
+padtickler demo1
+padtickler demo2
+padtickler demo3
 ```
 
 Running against a target in local development requires supplying a Python module with your `submit_guess` function and a ciphertext file as binary, base64, URL-safe base64, or hex data.
@@ -38,3 +43,16 @@ def submit_guess(prev_block: bytes, target_block: bytes) -> bool:
 - `bool`: True if the padding guess worked, false if there was an error.
 
 A full demo guess function is in [demo_guess.py](src/pad_tickler/demo_guess.py).
+
+## Local Development
+
+The project uses `task` to simplify and automate routine development tasks.
+
+```
+task clean
+task install
+task demo-api &
+task demo1
+task demo2
+task demo3
+```

@@ -24,7 +24,7 @@ tasks:
 
   demo-api:
     cmds:
-      - uv run padtickler-demo-api
+      - uv run padtickler demo-api --reload
 
   demo1:
     cmds:

@@ -28,10 +28,10 @@ jobs:
           uv pip install -e .
 
       - name: Run linting
-        run: task lint
+        run: uv run task lint
 
       - name: Test build
-        run: task build
+        run: uv run task build
 
       - name: Test CLI installation
         run: uv run padtickler --help

@@ -14,23 +14,27 @@ tasks:
 
   install:
     cmds:
-      - "uv pip install -e ."
+      - "scripts/install.sh"
+
+  lint:
+    cmds:
+      - "scripts/lint.sh"
+
+  demo-api:
+    cmds:
+      - uv run padtickler-demo-api
 
   demo1:
     cmds:
-      - uv run src/pad_tickler/main.py demo1
+      - uv run padtickler demo1
 
   demo2:
     cmds:
-      - uv run src/pad_tickler/main.py demo2
+      - uv run padtickler demo2
 
   demo3:
     cmds:
-      - uv run src/pad_tickler/main.py demo3
-
-  start-demo-api:
-    cmds:
-      - uv run python -m demo_api.main
+      - uv run padtickler demo3
 
   demo-encrypt:
     cmds:
@@ -39,10 +43,6 @@ tasks:
   demo-validate:
     cmds:
       - 'curl -s -X POST http://localhost:8000/api/validate -H "Content-Type: application/json" -d "{\"alg\": \"{{.ALG}}\", \"ciphertext_b64\": \"{{.CIPHERTEXT_B64}}\"}" | jq'
-
-  test:
-    cmds:
-      - "uv run pytest"
 
   clean:
     cmds:

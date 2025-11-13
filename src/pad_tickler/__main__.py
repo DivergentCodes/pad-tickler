@@ -1,9 +1,10 @@
 """Main entry point for the pad_tickler package."""
+
 from pad_tickler.cli import cli
 
 
 def main():
-    """Main entry point function."""
+    """Main entry point function"""
     cli()
 
 

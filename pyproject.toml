@@ -1,6 +1,6 @@
 [project]
 name = "padtickler"
-version = "0.1.0"
+version = "1.0.0"
 description = "Padding oracle CLI"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -19,6 +19,7 @@ padtickler = "pad_tickler.__main__:main"
 dev = [
     "go-task-bin>=3.44.1",
     "pytest>=8.4.1",
+    "python-semantic-release>=10.5.2",
     "ruff>=0.14.2",
 ]
 
@@ -39,16 +40,19 @@ path = "src/pad_tickler/__init__.py"
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
 version_variables = ["src/pad_tickler/__init__.py:__version__"]
-build_command = ""
+build_command = "uv run task build"
 dist_path = "dist/"
 upload_to_vcs_release = true
-major_on_zero = true
+major_on_zero = false
 tag_format = "v{version}"
 
 [tool.semantic_release.branches.main]
 match = "(main|master)"
 prerelease_token = "rc"
 prerelease = false
+
+[tool.semantic_release.changelog.default_templates]
+changelog_file = "CHANGELOG.md"
 
 [tool.semantic_release.changelog]
 exclude_commit_patterns = [
@@ -58,9 +62,6 @@ exclude_commit_patterns = [
   "^Release"
 ]
 
-[tool.semantic_release.changelog.default_templates]
-changelog_file = "CHANGELOG.md"
-
 [tool.semantic_release.commit_parser_options]
 allowed_tags = ["build", "chore", "ci", "docs", "feat", "fix", "perf", "style", "refactor", "test"]
 minor_tags = ["feat"]
@@ -68,4 +69,3 @@ patch_tags = ["fix", "perf"]
 
 [tool.semantic_release.remote]
 type = "github"
-token = { env = "GITHUB_TOKEN" }

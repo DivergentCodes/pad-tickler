@@ -52,7 +52,9 @@ jobs:
           verbosity: 2
           build: false
           commit: false
-          push: false
+          tag: true
+          push: true
+          vcs_release: true
 
   publish-test:
     # https://packaging.python.org/guides/using-testpypi/

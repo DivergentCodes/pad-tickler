@@ -1,5 +1,4 @@
 """Main entry point for the pad_tickler package."""
-
 from pad_tickler.cli import cli
 
 

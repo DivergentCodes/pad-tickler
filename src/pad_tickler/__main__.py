@@ -4,7 +4,7 @@ from pad_tickler.cli import cli
 
 
 def main():
-    """Main entry point function."""
+    """Main entry point function"""
     cli()
 
 

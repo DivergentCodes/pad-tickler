@@ -39,10 +39,10 @@ path = "src/pad_tickler/__init__.py"
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
 version_variables = ["src/pad_tickler/__init__.py:__version__"]
-build_command = ""
+build_command = "uv build"
 dist_path = "dist/"
 upload_to_vcs_release = true
-major_on_zero = true
+major_on_zero = false
 tag_format = "v{version}"
 
 [tool.semantic_release.branches.main]
